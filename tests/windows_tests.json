@@ -1,0 +1,42 @@
+[
+  {
+    "id": "WIN-NET-USER-1",
+    "input": "net user jays SuperPassword123 /add",
+    "expected": "net user jays **************** /add"
+  },
+  {
+    "id": "WIN-DEBUG-LEGACY",
+    "input": "debug run as secret_token_99",
+    "expected": "debug run as ***************"
+  },
+  {
+    "id": "WIN-NET-USE-WITH-USER",
+    "input": "{\"log\": \"net use \\\\srv\\share Pass123 /user:dom\\bob\"}",
+    "expected": "{\"log\": \"net use \\\\srv\\share ******* /user:dom\\bob\"}"
+  },
+  {
+    "id": "WIN-NET-USE-SHORT",
+    "input": "net use Password456 /user:admin",
+    "expected": "net use *********** /user:admin"
+  },
+  {
+    "id": "WIN-CMDKEY-PASS",
+    "input": "cmdkey /add:target /user:jays /pass:MySecret",
+    "expected": "cmdkey /add:target /user:jays /pass:********"
+  },
+  {
+    "id": "NEGATIVE-TEST",
+    "input": "The net user command is used for account management.",
+    "expected": "The net user command is used for account management."
+  },
+    {
+    "id": "WIN-SCHTASKS-RP",
+    "input": "schtasks /create /ru bob /rp Secret123",
+    "expected": "schtasks /create /ru bob /rp *********"
+  },
+      {
+    "id": "WIN-WMIC-PASSWORD",
+    "input": "wmic /user:bob /password:\"Secret123\" process call create cmd.exe",
+    "expected": "wmic /user:bob /password:\"*********\" process call create cmd.exe"
+  }
+]

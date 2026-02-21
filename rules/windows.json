@@ -1,0 +1,9 @@
+[
+  { "id": "WIN-NET-USER-ADD", "phrase": ["net", "user", "*", "*", "add"], "skip": -1, "enabled": true },
+  { "id": "WIN-NET-USE-WITH-USER", "phrase": ["net", "use", "*", "*", "user", "*"], "skip": -2, "enabled": true },
+  { "id": "WIN-NET-USE-SHORT", "phrase": ["net", "use", "*", "user", "*"], "skip": -2, "enabled": true },
+  { "id": "WIN-CMDKEY-PASS", "phrase": ["cmdkey", "add", "*", "user", "*", "pass", "*"], "skip": 0, "enabled": true },
+  { "id": "WIN-SCHTASKS-RP", "phrase": ["schtasks", "create", "ru", "*", "rp", "*"], "skip": 0, "enabled": true },
+  { "id": "WIN-WMIC-PASSWORD", "phrase": ["wmic", "user", "*", "password", "*"], "skip": 0, "enabled": true },
+  { "id": "WIN-DEBUG-LEGACY", "phrase": ["debug", "run", "as", "*"], "skip": 0, "enabled": true }
+]

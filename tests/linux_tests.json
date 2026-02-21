@@ -1,0 +1,17 @@
+[
+  {
+    "rule_id": "LINUX-MYSQL-P",
+    "input": "mysql -u root -pPassword123",
+    "expected": "mysql -u root -p***********"
+  },
+  {
+    "rule_id": "LINUX-DOCKER-LOGIN",
+    "input": "docker login --username bob --password MyDockerSecret",
+    "expected": "docker login --username bob --password **************"
+  },
+  {
+    "rule_id": "LINUX-SUDO-S",
+    "input": "echo 'Pass@123' | sudo -S apt update",
+    "expected": "echo '********' | sudo -S apt update"
+  }
+]
