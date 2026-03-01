@@ -1,4 +1,3 @@
-// orchestrator.go
 package redactor
 
 import (
@@ -7,23 +6,36 @@ import (
 	"sync"
 )
 
-func RunParallel(root *TrieNode, workerCount int) {
+type Job struct {
+	ID   int
+	Data []byte
+}
+
+type Result struct {
+	ID   int
+	Data []byte
+}
+
+// Changed root *TrieNode to trie *Trie
+func RunParallel(trie *Trie, workerCount int) {
 	jobs := make(chan Job, workerCount*2)
 	results := make(chan Result, workerCount*2)
 	var wg sync.WaitGroup
 
 	// Worker Pool
-	for range workerCount {
-		wg.Go(func() {
+	for i := 0; i < workerCount; i++ {
+		wg.Add(1) // Standard Go WaitGroup usage
+		go func() {
+			defer wg.Done()
 			for job := range jobs {
-				// MODIFIES IN PLACE: No new string allocation
-				RedactBytes(job.Data, root)
+				// Now passing the *Trie manager
+				RedactBytes(job.Data, trie)
 				results <- Result{ID: job.ID, Data: job.Data}
 			}
-		})
+		}()
 	}
 
-	// Ordered Sequencer
+	// Ordered Sequencer (Remains mostly the same)
 	go func() {
 		pending := make(map[int][]byte)
 		nextID := 0
@@ -35,26 +47,22 @@ func RunParallel(root *TrieNode, workerCount int) {
 				if !ok {
 					break
 				}
-
-				// Direct write to the OS buffer
 				os.Stdout.Write(data)
 				os.Stdout.Write(newline)
-
 				delete(pending, nextID)
 				nextID++
 			}
 		}
 	}()
 
-	// Producer
+	// Producer (Remains mostly the same)
 	scanner := bufio.NewScanner(os.Stdin)
+	// 1MB buffer for long log lines
 	buf := make([]byte, 1024*1024)
 	scanner.Buffer(buf, 1024*1024)
 
 	lineID := 0
 	for scanner.Scan() {
-		// We still need this copy because scanner.Bytes() will be
-		// overwritten on the next loop iteration.
 		line := scanner.Bytes()
 		lineCopy := make([]byte, len(line))
 		copy(lineCopy, line)

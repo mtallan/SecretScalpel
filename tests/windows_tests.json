@@ -1,42 +1,162 @@
 [
   {
-    "id": "WIN-NET-USER-1",
-    "input": "net user jays SuperPassword123 /add",
-    "expected": "net user jays **************** /add"
+    "id": "WIN-NET-USER-DOMAIN",
+    "input": "net user bob Secret123 domain",
+    "expected": "net user bob ********* domain"
   },
   {
-    "id": "WIN-DEBUG-LEGACY",
-    "input": "debug run as secret_token_99",
-    "expected": "debug run as ***************"
+    "id": "WIN-NET-USE-DOMAIN",
+    "input": "net use \\\\srv\\share Pass123 domain",
+    "expected": "net use \\\\srv\\share ******* domain"
   },
   {
-    "id": "WIN-NET-USE-WITH-USER",
-    "input": "{\"log\": \"net use \\\\srv\\share Pass123 /user:dom\\bob\"}",
-    "expected": "{\"log\": \"net use \\\\srv\\share ******* /user:dom\\bob\"}"
+    "id": "WIN-CMDKEY-GENERIC",
+    "input": "cmdkey target user bob pass MySecret",
+    "expected": "cmdkey target user bob pass ********"
   },
   {
-    "id": "WIN-NET-USE-SHORT",
-    "input": "net use Password456 /user:admin",
-    "expected": "net use *********** /user:admin"
+    "id": "WIN-SCHTASKS-CHANGE-RP",
+    "input": "schtasks change ru bob rp Secret123",
+    "expected": "schtasks change ru bob rp *********"
   },
   {
-    "id": "WIN-CMDKEY-PASS",
-    "input": "cmdkey /add:target /user:jays /pass:MySecret",
-    "expected": "cmdkey /add:target /user:jays /pass:********"
+    "id": "WIN-WMIC-REMOTE",
+    "input": "wmic node 10.0.0.1 user admin password SuperPass",
+    "expected": "wmic node 10.0.0.1 user admin password *********"
   },
   {
-    "id": "NEGATIVE-TEST",
-    "input": "The net user command is used for account management.",
-    "expected": "The net user command is used for account management."
+    "id": "WIN-CERTUTIL-P",
+    "input": "certutil p MyPfxPassword",
+    "expected": "certutil p *************"
   },
-    {
-    "id": "WIN-SCHTASKS-RP",
-    "input": "schtasks /create /ru bob /rp Secret123",
-    "expected": "schtasks /create /ru bob /rp *********"
+  {
+    "id": "WIN-PSEXEC-P",
+    "input": "psexec \\\\host u bob p MySecret cmd",
+    "expected": "psexec \\\\host u bob p ******** cmd"
   },
-      {
-    "id": "WIN-WMIC-PASSWORD",
-    "input": "wmic /user:bob /password:\"Secret123\" process call create cmd.exe",
-    "expected": "wmic /user:bob /password:\"*********\" process call create cmd.exe"
+  {
+    "id": "WIN-SQLCMD-P",
+    "input": "sqlcmd u sa p MySecret",
+    "expected": "sqlcmd u sa p ********"
+  },
+  {
+    "id": "WIN-APPCMD-PASSWORD",
+    "input": "appcmd set config username admin password SuperSecret",
+    "expected": "appcmd set config username admin password ***********"
+  },
+  {
+    "id": "WIN-AZ-LOGIN-PASSWORD",
+    "input": "az login --username bob --password Secret123",
+    "expected": "az login --username bob --password *********"
+  },
+  {
+    "id": "WIN-POWERSHELL-SECURESTRING",
+    "input": "convertto-securestring -string MySecret -asplaintext -force",
+    "expected": "convertto-securestring -string ******** -asplaintext -force"
+  },
+  {
+    "id": "NEGATIVE-TEST-2",
+    "input": "The net use command connects to a shared resource.",
+    "expected": "The net use command connects to a shared resource."
+  },
+  {
+    "id": "net-user-set-password-basic",
+    "input": "net user alice S3cr3t!",
+    "expected": "net user alice *******"
+  },
+  {
+    "id": "net-user-set-password-domain",
+    "input": "net user alice S3cr3t! /domain",
+    "expected": "net user alice ******* /domain"
+  },
+  {
+    "id": "net-user-add-with-password",
+    "input": "net user bob P@ssw0rd /add",
+    "expected": "net user bob ******** /add"
+  },
+  {
+    "id": "net-user-json-log-password",
+    "input": "{\"cmd\":\"net user alice S3cr3t!\"}",
+    "expected": "{\"cmd\":\"net user alice *******\"}"
+  },
+  {
+    "id": "net-use-inline-password",
+    "input": "net use Z: \\fileserver\\share alice P@ssw0rd",
+    "expected": "net use Z: \\\\fileserver\\share alice ********"
+  },
+  {
+    "id": "net-use-inline-password-domain",
+    "input": "net use Z: \\\\fileserver\\share alice P@ssw0rd domain",
+    "expected": "net use Z: \\\\fileserver\\share alice ******** domain"
+  },
+  {
+    "id": "net-use-json-log-password",
+    "input": "{\"cmd\":\"net use Z: \\\\srv\\share alice P@ssw0rd\"}",
+    "expected": "{\"cmd\":\"net use Z: \\\\srv\\share alice ********\"}"
+  },
+  {
+    "id": "runas-password-prompt",
+    "input": "runas /user:DOMAIN\\alice MyP@ss!",
+    "expected": "runas /user:DOMAIN\\alice *******"
+  },
+  {
+    "id": "cmdkey-generic-cred-password",
+    "input": "cmdkey /generic:TERMSRV/server /user:alice /pass:MyP@ss!",
+    "expected": "cmdkey /generic:TERMSRV/server /user:alice /pass:*******"
+  },
+  {
+    "id": "cmdkey-target-cred-password",
+    "input": "cmdkey /add:server /user:alice /pass:MyP@ss!",
+    "expected": "cmdkey /add:server /user:alice /pass:*******"
+  },
+  {
+    "id": "psexec-p-attached",
+    "input": "psexec -uDOMAIN\\alice -pMyP@ss! \\\\server cmd.exe",
+    "expected": "psexec -uDOMAIN\\alice -p******* \\\\server cmd.exe"
+  },
+  {
+    "id": "psexec-p-separated",
+    "input": "psexec -u DOMAIN\\alice -p MyP@ss! \\\\server cmd.exe",
+    "expected": "psexec -u DOMAIN\\alice -p ******* \\\\server cmd.exe"
+  },
+  {
+    "id": "sc-create-service-password",
+    "input": "sc create MySvc binPath= \"C:\\svc.exe -user alice -password MyP@ss!\"",
+    "expected": "sc create MySvc binPath= \"C:\\svc.exe -user alice -password *******\""
+  },
+  {
+    "id": "rasdial-inline-password",
+    "input": "rasdial MyVPN alice MyP@ss!",
+    "expected": "rasdial MyVPN alice *******"
+  },
+  {
+    "id": "mstsc-password-flag",
+    "input": "mstsc /v:server /admin /password:MyP@ss!",
+    "expected": "mstsc /v:server /admin /password:*******"
+  },
+  {
+    "id": "netdom-resetpwd-password",
+    "input": "netdom resetpwd /server:DC1 /userd:DOMAIN\\alice /passwordd:MyP@ss!",
+    "expected": "netdom resetpwd /server:DC1 /userd:DOMAIN\\alice /passwordd:*******"
+  },
+  {
+    "id": "dsmod-user-pwd",
+    "input": "dsmod user \"CN=Alice,DC=example,DC=com\" -pwd MyP@ss!",
+    "expected": "dsmod user \"CN=Alice,DC=example,DC=com\" -pwd *******"
+  },
+  {
+    "id": "powershell-set-localuser-password",
+    "input": "powershell Set-LocalUser -Name alice -Password MyP@ss!",
+    "expected": "powershell Set-LocalUser -Name alice -Password *******"
+  },
+  {
+    "id": "powershell-securestring-string",
+    "input": "powershell ConvertTo-SecureString -String MyP@ss! -AsPlainText -Force",
+    "expected": "powershell ConvertTo-SecureString -String ******* -AsPlainText -Force"
+  },
+  {
+    "id": "neg-password-word-only",
+    "input": "this is not a password command, just documentation",
+    "expected": "this is not a password command, just documentation"
   }
 ]

@@ -1,21 +1,17 @@
 [
-{
-  "id": "LINUX-DOCKER-LOGIN",
-  "phrase": ["docker", "login", "--username", "*", "--password", "*"],
-  "skip": 0,
-  "enabled": true
-},
-{
-  "id": "LINUX-MYSQL-P",
-  "phrase": ["mysql", "*", "*", "-p*"],
-  "skip": 0,
-  "redact_offset": 2,
-  "enabled": true
-},
-{
-  "id": "LINUX-SUDO-S",
-  "phrase": ["echo", "*", "|", "sudo", "-S"],
-  "skip": -3,
-  "enabled": true
-}
+  { 
+    "id": "LNX-MYSQL-P", 
+    "phrase": ["<any:.*-p[^ ]+>"], 
+    "isRegex": true, "priority": 1000, "redact_offset": 2, "enabled": false 
+  },
+  { 
+    "id": "LNX-DOCKER-LOGIN", 
+    "phrase": ["docker", "login", "<ANY>", "<ANY>", "--password", "<REDACT>"], 
+    "priority": 100, "enabled": true 
+  },
+  { 
+    "id": "LNX-SUDO-S-PIPE", 
+    "phrase": ["echo", "<REDACT>", "|", "sudo", "-S"], 
+    "priority": 100, "enabled": true 
+  }
 ]

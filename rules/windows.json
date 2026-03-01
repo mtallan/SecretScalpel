@@ -1,41 +1,38 @@
 [
-  { "id": "WIN-NET-USER-DOMAIN", "phrase": ["net", "user", "*", "*", "domain"], "skip": -1, "enabled": true },
-
-  { "id": "WIN-NET-USER-ACTIVE", "phrase": ["net", "user", "*", "*", "active", "*"], "skip": -2, "enabled": true },
-
-  { "id": "WIN-NET-USE-DOMAIN", "phrase": ["net", "use", "*", "*", "domain"], "skip": -1, "enabled": true },
-
-  { "id": "WIN-CMDKEY-GENERIC", "phrase": ["cmdkey", "*", "*", "user", "*", "pass", "*"], "skip": 0, "enabled": true },
-
-  { "id": "WIN-SCHTASKS-CHANGE-RP", "phrase": ["schtasks", "change", "ru", "*", "rp", "*"], "skip": 0, "enabled": true },
-
-  { "id": "WIN-WMIC-REMOTE", "phrase": ["wmic", "*", "*", "user", "*", "password", "*"], "skip": 0, "enabled": true },
-
-  { "id": "WIN-CERTUTIL-P", "phrase": ["certutil", "p", "*"], "skip": 0, "enabled": true },
-
-  { "id": "WIN-PSEXEC-P", "phrase": ["psexec", "*", "u", "*", "p", "*"], "skip": 0, "enabled": true },
-
-  { "id": "WIN-PSEXEC-SHORT-P", "phrase": ["psexec", "*", "p", "*"], "skip": 0, "enabled": true },
-
-  { "id": "WIN-SQLCMD-P", "phrase": ["sqlcmd", "u", "*", "p", "*"], "skip": 0, "enabled": true },
-
-  { "id": "WIN-APPCMD-PASSWORD", "phrase": ["appcmd", "*", "*", "username", "*", "password", "*"], "skip": 0, "enabled": true },
-
-  { "id": "WIN-MSDEPLOY-PASSWORD", "phrase": ["msdeploy", "*", "username", "*", "password", "*"], "skip": 0, "enabled": true },
-
-  { "id": "WIN-AZ-LOGIN-P", "phrase": ["az", "login", "u", "*", "p", "*"], "skip": 0, "enabled": true },
-
-  { "id": "WIN-AZ-LOGIN-PASSWORD", "phrase": ["az", "login", "username", "*", "password", "*"], "skip": 0, "enabled": true },
-
-  { "id": "WIN-POWERSHELL-SECURESTRING", "phrase": ["convertto", "securestring", "*", "asplaintext"], "skip": -1, "enabled": true },
-
-  { "id": "WIN-POWERSHELL-CREDENTIAL", "phrase": ["new", "object", "pscredential", "*", "*"], "skip": 0, "enabled": true },
-
-  { "id": "WIN-WINRM-SET", "phrase": ["winrm", "set", "*", "username", "*", "password", "*"], "skip": 0, "enabled": true },
-
-  { "id": "WIN-NET-LOCALGROUP-ADD", "phrase": ["net", "localgroup", "*", "*", "add"], "skip": -1, "enabled": true },
-
-  { "id": "WIN-DEBUG-RUN-AS", "phrase": ["debug", "run", "as", "*"], "skip": 0, "enabled": true },
-
-  { "id": "WIN-RUNDLL32-CREDENTIAL", "phrase": ["rundll32", "*", "username", "*", "password", "*"], "skip": 0, "enabled": true }
+  { "id": "WIN-NET-USER-DOMAIN", "phrase": ["net", "user", "<any>", "<REDACT>", "domain"], "priority": 1, "enabled": true },
+  { "id": "WIN-NET-USE-DOMAIN", "phrase": ["net", "use", "<any:^\\\\\\\\.*>", "<REDACT>", "domain"], "priority": 1, "enabled": true },
+  { "id": "WIN-CMDKEY-GENERIC", "phrase": ["cmdkey", "target", "user", "<any>", "pass", "<REDACT>"], "priority": 1, "enabled": true },
+  { "id": "WIN-SCHTASKS", "phrase": ["schtasks", "change", "ru", "<any>", "rp", "<REDACT>"], "priority": 1, "enabled": true },
+  { "id": "WIN-WMIC", "phrase": ["wmic", "node", "<any>", "user", "<any>", "password", "<REDACT>"], "priority": 1, "enabled": true },
+  { "id": "WIN-CERTUTIL", "phrase": ["certutil", "p", "<REDACT>"], "priority": 1, "enabled": true },
+  { "id": "WIN-PSEXEC", "phrase": ["psexec", "<any>", "u", "<any>", "p", "<REDACT>", "cmd"], "priority": 1, "enabled": true },
+  { "id": "WIN-SQLCMD", "phrase": ["sqlcmd", "u", "<any>", "p", "<REDACT>"], "priority": 1, "enabled": true },
+  { "id": "WIN-APPCMD", "phrase": ["appcmd", "set", "config", "username", "<any>", "password", "<REDACT>"], "priority": 1, "enabled": true },
+  { "id": "WIN-AZ-LOGIN", "phrase": ["az", "login", "--username", "<any>", "--password", "<REDACT>"], "priority": 1, "enabled": true },
+  { "id": "WIN-POWERSHELL-SECURESTRING", "phrase": ["convertto-securestring", "-string", "<REDACT>", "-asplaintext", "-force"], "priority": 1, "enabled": true },
+  
+  { "id": "NET-USER-BASIC", "phrase": ["net", "user", "alice", "<REDACT>"], "priority": 3, "enabled": true },
+  { "id": "NET-USER-DOMAIN-SLASH", "phrase": ["net", "user", "<any>", "<REDACT>", "/domain"], "priority": 1, "enabled": true },
+  { "id": "NET-USER-ADD", "phrase": ["net", "user", "<any>", "<REDACT>", "/add"], "priority": 1, "enabled": true },
+  
+  { "id": "NET-USE-INLINE", "phrase": ["net", "use", "<any:^[A-Za-z]:$>", "<any:^\\\\\\\\.*>", "<any>", "<REDACT>"], "priority": 2, "enabled": true },
+  { "id": "NET-USE-INLINE-DOMAIN", "phrase": ["net", "use", "<any:^[A-Za-z]:$>", "<any:^\\\\\\\\.*>", "<any>", "<REDACT>", "domain"], "priority": 1, "enabled": true },
+  
+  { "id": "RUNAS", "phrase": ["runas", "<any>", "<REDACT>"], "priority": 1, "enabled": true },
+  
+  { "id": "CMDKEY-ATTACHED", "phrase": ["cmdkey", "<any>", "<any>", "<redact:^/pass:.*>"], "redact_offset": 6, "priority": 1, "enabled": true },
+  
+  { "id": "PSEXEC-ATTACHED", "phrase": ["psexec", "<any:^-u.*>", "<redact:^-p.*>", "<any>", "cmd.exe"], "redact_offset": 2, "priority": 1, "enabled": true },
+  { "id": "PSEXEC-SEPARATED", "phrase": ["psexec", "-u", "<any>", "-p", "<REDACT>", "<any>", "cmd.exe"], "priority": 1, "enabled": true },
+  
+  { "id": "SC-CREATE", "phrase": ["sc", "create", "<any>", "binpath=", "<any>", "-user", "<any>", "-password", "<REDACT>"], "priority": 1, "enabled": true },
+  
+  { "id": "RASDIAL", "phrase": ["rasdial", "<any>", "<any>", "<REDACT>"], "priority": 1, "enabled": true },
+  
+  { "id": "MSTSC", "phrase": ["mstsc", "<any>", "<any>", "<redact:^/password:.*>"], "redact_offset": 10, "priority": 1, "enabled": true },
+  { "id": "NETDOM", "phrase": ["netdom", "resetpwd", "<any>", "<any>", "<redact:^/passwordd:.*>"], "redact_offset": 11, "priority": 1, "enabled": true },
+  
+  { "id": "DSMOD", "phrase": ["dsmod", "user", "<any>", "-pwd", "<REDACT>"], "priority": 1, "enabled": true },
+  
+  { "id": "POWERSHELL-LOCALUSER", "phrase": ["powershell", "set-localuser", "-name", "<any>", "-password", "<REDACT>"], "priority": 1, "enabled": true }
 ]

@@ -1,63 +1,125 @@
-/* trie.go - ALWAYS INCLUDE THIS HEADER*/
-
 package redactor
 
 import (
-	"encoding/json"
-	"os"
-	"path/filepath"
+	"fmt"
+	"regexp"
 	"strings"
 )
 
-func NewTrie() *TrieNode {
-	return &TrieNode{Children: make(map[string]*TrieNode)}
+type RegexRule struct {
+	ID       string
+	Re       *regexp.Regexp
+	Mask     string
+	Offset   int
+	Priority int
 }
 
-func (n *TrieNode) AddRule(phrase []string, skip int, id string, offset int) {
-	curr := n
-	if len(phrase) > n.MaxDepth {
-		n.MaxDepth = len(phrase)
-	}
-
-	for _, word := range phrase {
-		word = strings.ToLower(word)
-		if _, ok := curr.Children[word]; !ok {
-			curr.Children[word] = NewTrie()
-		}
-		curr = curr.Children[word]
-	}
-
-	curr.IsTerminal = true
-	curr.Skip = skip
-	curr.ID = id
-	curr.RedactOffset = offset
+type RegexEdge struct {
+	Re   *regexp.Regexp
+	Node *TrieNode
 }
 
-func LoadRulesFromDir(dir string, root *TrieNode) error {
-	files, err := os.ReadDir(dir)
+type RuleMeta struct {
+	ID            string
+	RedactIndices []int
+	CustomMask    string
+	Offset        int
+	Priority      int
+}
+
+type TrieNode struct {
+	Children      map[string]*TrieNode
+	RegexChildren []RegexEdge
+	Meta          *RuleMeta
+}
+
+type Trie struct {
+	Root        *TrieNode
+	MaxDepth    int
+	DefaultMask string
+	RegexRules  []*RegexRule
+}
+
+var placeholderRegex = regexp.MustCompile(`^<(redact|any):(.+)>$`)
+
+func NewTrie(mask string, min int, max int) *Trie {
+	return &Trie{
+		Root:        &TrieNode{Children: make(map[string]*TrieNode)},
+		DefaultMask: mask,
+	}
+}
+
+func (t *Trie) AddRegexRule(id, pattern, mask string, offset, priority int) {
+	re, err := regexp.Compile("(?i)" + pattern)
 	if err != nil {
-		return err
+		fmt.Printf("Invalid regex: %v\n", err)
+		return
 	}
+	t.RegexRules = append(t.RegexRules, &RegexRule{
+		ID: id, Re: re, Mask: mask, Offset: offset, Priority: priority,
+	})
+}
 
-	for _, file := range files {
-		if filepath.Ext(file.Name()) == ".json" {
-			path := filepath.Join(dir, file.Name())
-			data, err := os.ReadFile(path)
+func (t *Trie) AddRule(id string, phrase []string, mask string, min int, max int, offset int, priority int) {
+	if len(phrase) == 0 {
+		return
+	}
+	curr := t.Root
+	var redactIndices []int
+
+	for i, word := range phrase {
+		clean := strings.ToLower(word)
+
+		// 1. Check for Regex Placeholders
+		if matches := placeholderRegex.FindStringSubmatch(clean); len(matches) > 0 {
+			if matches[1] == "redact" {
+				redactIndices = append(redactIndices, i)
+			}
+
+			pattern := "(?i)" + matches[2]
+			re, err := regexp.Compile(pattern)
 			if err != nil {
 				continue
 			}
 
-			var rules []Rule
-			if err := json.Unmarshal(data, &rules); err != nil {
-				continue
-			}
-
-			for _, r := range rules {
-				if r.Enabled {
-					root.AddRule(r.Phrase, r.Skip, r.ID, r.RedactOffset)
+			// Link via Regex Edge
+			found := false
+			for _, edge := range curr.RegexChildren {
+				if edge.Re.String() == re.String() {
+					curr = edge.Node
+					found = true
+					break
 				}
 			}
+			if !found {
+				newNode := &TrieNode{Children: make(map[string]*TrieNode)}
+				curr.RegexChildren = append(curr.RegexChildren, RegexEdge{Re: re, Node: newNode})
+				curr = newNode
+			}
+			continue
 		}
+
+		// 2. Handle Literal/Wildcard
+		if clean == "<redact>" {
+			redactIndices = append(redactIndices, i)
+		}
+
+		key := clean
+		if clean == "<redact>" || clean == "<any>" {
+			key = "*"
+		}
+
+		if _, ok := curr.Children[key]; !ok {
+			curr.Children[key] = &TrieNode{Children: make(map[string]*TrieNode)}
+		}
+		curr = curr.Children[key]
 	}
-	return nil
+
+	curr.Meta = &RuleMeta{
+		ID: id, RedactIndices: redactIndices, CustomMask: mask,
+		Offset: offset, Priority: priority,
+	}
+	if len(phrase) > t.MaxDepth {
+		t.MaxDepth = len(phrase)
+	}
 }

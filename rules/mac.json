@@ -1,0 +1,26 @@
+[
+  {
+    "id": "MAC-SECURITY-INTERNET-PASS",
+    "phrase": ["security", "add", "internet", "password", "<ANY>", "<ANY>", "<ANY>", "<ANY>", "w", "<REDACT>"],
+    "priority": 1100,
+    "enabled": true
+  },
+  {
+    "id": "MAC-SECURITY-PASS-SHORT",
+    "phrase": ["security", "add", "internet", "password", "w", "<REDACT>"],
+    "priority": 1000,
+    "enabled": true
+  },
+  {
+    "id": "MAC-SECURITY-GENERIC-W",
+    "phrase": ["security", "<ANY>", "<ANY>", "<ANY>", "w", "<REDACT>"],
+    "priority": 800,
+    "enabled": true
+  },
+  {
+    "id": "MAC-SECURITY-ACCOUNT-W",
+    "phrase": ["security", "a", "<ANY>", "w", "<REDACT>"],
+    "priority": 1000,
+    "enabled": true
+  }
+]

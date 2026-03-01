@@ -1,3 +1,0 @@
-[
-  { "id": "WIN-NET-USER", "phrase": ["net", "user", "*", "*"], "skip": 0 }
-]
