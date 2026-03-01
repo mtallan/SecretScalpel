@@ -1,9 +1,41 @@
 [
-  { "id": "WIN-NET-USER-ADD", "phrase": ["net", "user", "*", "*", "add"], "skip": -1, "enabled": true },
-  { "id": "WIN-NET-USE-WITH-USER", "phrase": ["net", "use", "*", "*", "user", "*"], "skip": -2, "enabled": true },
-  { "id": "WIN-NET-USE-SHORT", "phrase": ["net", "use", "*", "user", "*"], "skip": -2, "enabled": true },
-  { "id": "WIN-CMDKEY-PASS", "phrase": ["cmdkey", "add", "*", "user", "*", "pass", "*"], "skip": 0, "enabled": true },
-  { "id": "WIN-SCHTASKS-RP", "phrase": ["schtasks", "create", "ru", "*", "rp", "*"], "skip": 0, "enabled": true },
-  { "id": "WIN-WMIC-PASSWORD", "phrase": ["wmic", "user", "*", "password", "*"], "skip": 0, "enabled": true },
-  { "id": "WIN-DEBUG-LEGACY", "phrase": ["debug", "run", "as", "*"], "skip": 0, "enabled": true }
+  { "id": "WIN-NET-USER-DOMAIN", "phrase": ["net", "user", "*", "*", "domain"], "skip": -1, "enabled": true },
+
+  { "id": "WIN-NET-USER-ACTIVE", "phrase": ["net", "user", "*", "*", "active", "*"], "skip": -2, "enabled": true },
+
+  { "id": "WIN-NET-USE-DOMAIN", "phrase": ["net", "use", "*", "*", "domain"], "skip": -1, "enabled": true },
+
+  { "id": "WIN-CMDKEY-GENERIC", "phrase": ["cmdkey", "*", "*", "user", "*", "pass", "*"], "skip": 0, "enabled": true },
+
+  { "id": "WIN-SCHTASKS-CHANGE-RP", "phrase": ["schtasks", "change", "ru", "*", "rp", "*"], "skip": 0, "enabled": true },
+
+  { "id": "WIN-WMIC-REMOTE", "phrase": ["wmic", "*", "*", "user", "*", "password", "*"], "skip": 0, "enabled": true },
+
+  { "id": "WIN-CERTUTIL-P", "phrase": ["certutil", "p", "*"], "skip": 0, "enabled": true },
+
+  { "id": "WIN-PSEXEC-P", "phrase": ["psexec", "*", "u", "*", "p", "*"], "skip": 0, "enabled": true },
+
+  { "id": "WIN-PSEXEC-SHORT-P", "phrase": ["psexec", "*", "p", "*"], "skip": 0, "enabled": true },
+
+  { "id": "WIN-SQLCMD-P", "phrase": ["sqlcmd", "u", "*", "p", "*"], "skip": 0, "enabled": true },
+
+  { "id": "WIN-APPCMD-PASSWORD", "phrase": ["appcmd", "*", "*", "username", "*", "password", "*"], "skip": 0, "enabled": true },
+
+  { "id": "WIN-MSDEPLOY-PASSWORD", "phrase": ["msdeploy", "*", "username", "*", "password", "*"], "skip": 0, "enabled": true },
+
+  { "id": "WIN-AZ-LOGIN-P", "phrase": ["az", "login", "u", "*", "p", "*"], "skip": 0, "enabled": true },
+
+  { "id": "WIN-AZ-LOGIN-PASSWORD", "phrase": ["az", "login", "username", "*", "password", "*"], "skip": 0, "enabled": true },
+
+  { "id": "WIN-POWERSHELL-SECURESTRING", "phrase": ["convertto", "securestring", "*", "asplaintext"], "skip": -1, "enabled": true },
+
+  { "id": "WIN-POWERSHELL-CREDENTIAL", "phrase": ["new", "object", "pscredential", "*", "*"], "skip": 0, "enabled": true },
+
+  { "id": "WIN-WINRM-SET", "phrase": ["winrm", "set", "*", "username", "*", "password", "*"], "skip": 0, "enabled": true },
+
+  { "id": "WIN-NET-LOCALGROUP-ADD", "phrase": ["net", "localgroup", "*", "*", "add"], "skip": -1, "enabled": true },
+
+  { "id": "WIN-DEBUG-RUN-AS", "phrase": ["debug", "run", "as", "*"], "skip": 0, "enabled": true },
+
+  { "id": "WIN-RUNDLL32-CREDENTIAL", "phrase": ["rundll32", "*", "username", "*", "password", "*"], "skip": 0, "enabled": true }
 ]
