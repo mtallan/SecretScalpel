@@ -1,17 +1,32 @@
 [
-  { 
-    "id": "LNX-MYSQL-P", 
-    "phrase": ["<any:.*-p[^ ]+>"], 
-    "isRegex": true, "priority": 1000, "redact_offset": 2, "enabled": false 
-  },
-  { 
-    "id": "LNX-DOCKER-LOGIN", 
-    "phrase": ["docker", "login", "<ANY>", "<ANY>", "--password", "<REDACT>"], 
-    "priority": 100, "enabled": true 
-  },
-  { 
-    "id": "LNX-SUDO-S-PIPE", 
-    "phrase": ["echo", "<REDACT>", "|", "sudo", "-S"], 
-    "priority": 100, "enabled": true 
-  }
+  { "id": "LNX-SUDO-S-PIPE",        "phrase": ["echo", "<REDACT>", "|", "sudo", "-S"],                              "priority": 1, "enabled": true },
+  { "id": "LNX-DOCKER-LOGIN",        "phrase": ["docker", "login", "<any>", "<any>", "--password", "<REDACT>"],      "priority": 1, "enabled": true },
+  { "id": "LNX-DOCKER-LOGIN-SHORT",  "phrase": ["docker", "login", "<any>", "<any>", "-p", "<REDACT>"],             "priority": 1, "enabled": true },
+
+  { "id": "LNX-MYSQL-P-SEPARATED",   "phrase": ["mysql", "-u", "<any>", "-p", "<REDACT>"],                          "priority": 1, "enabled": true },
+  { "id": "LNX-MYSQL-PASSWORD",      "phrase": ["mysql", "-u", "<any>", "--password", "<REDACT>"],                  "priority": 1, "enabled": true },
+  { "id": "LNX-MYSQLDUMP-P",         "phrase": ["mysqldump", "-u", "<any>", "-p", "<REDACT>"],                      "priority": 1, "enabled": true },
+  { "id": "LNX-MYSQLDUMP-PASSWORD",  "phrase": ["mysqldump", "-u", "<any>", "--password", "<REDACT>"],              "priority": 1, "enabled": true },
+
+  { "id": "LNX-PSQL-PASSWORD",       "phrase": ["psql", "-U", "<any>", "-W", "<REDACT>"],                          "priority": 1, "enabled": true },
+  { "id": "LNX-PSQL-PASSWORD-LONG",  "phrase": ["psql", "--username", "<any>", "--password", "<REDACT>"],          "priority": 1, "enabled": true },
+
+  { "id": "LNX-MONGODUMP-P",         "phrase": ["mongodump", "--password", "<REDACT>"],                            "priority": 1, "enabled": true },
+  { "id": "LNX-MONGORESTORE-P",      "phrase": ["mongorestore", "--password", "<REDACT>"],                         "priority": 1, "enabled": true },
+
+  { "id": "LNX-REDIS-CLI",           "phrase": ["redis-cli", "-a", "<REDACT>"],                                    "priority": 1, "enabled": true },
+
+  { "id": "LNX-CURL-U",              "phrase": ["curl", "-u", "<redact:.*:.*>"],                   "redact_offset": 0, "priority": 1, "enabled": true },
+  { "id": "LNX-CURL-USER",           "phrase": ["curl", "--user", "<redact:.*:.*>"],               "redact_offset": 0, "priority": 1, "enabled": true },
+  { "id": "LNX-WGET-PASSWORD",       "phrase": ["wget", "--password", "<REDACT>"],                                 "priority": 1, "enabled": true },
+  { "id": "LNX-WGET-HTTP-PASSWORD",  "phrase": ["wget", "--http-password", "<REDACT>"],                            "priority": 1, "enabled": true },
+
+  { "id": "LNX-SSH-PASS",            "phrase": ["sshpass", "-p", "<REDACT>"],                                      "priority": 1, "enabled": true },
+  { "id": "LNX-FTP-PASS",            "phrase": ["ftp", "<any>", "<any>", "<REDACT>"],                              "priority": 2, "enabled": true },
+
+  { "id": "LNX-OPENSSL-PASS",        "phrase": ["openssl", "<any>", "-passin", "pass:<REDACT>"],                   "priority": 1, "enabled": true },
+  { "id": "LNX-OPENSSL-PASSOUT",     "phrase": ["openssl", "<any>", "-passout", "pass:<REDACT>"],                  "priority": 1, "enabled": true },
+
+  { "id": "LNX-ANSIBLE-VAULT",       "phrase": ["ansible-vault", "<any>", "--vault-password-file", "<REDACT>"],   "priority": 1, "enabled": true },
+  { "id": "LNX-GPUPDATE-P",          "phrase": ["gpupdate", "-p", "<REDACT>"],                                    "priority": 1, "enabled": true }
 ]

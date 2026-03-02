@@ -14,6 +14,40 @@ type TestCase struct {
 	Expected string `json:"expected"`
 }
 
+func TestLinuxRules(t *testing.T) {
+	root := NewTrie("*", 2, 0)
+	err := LoadRulesFromDir("../rules", root)
+	if err != nil {
+		t.Fatalf("Failed to load rules: %v", err)
+	}
+
+	testFileData, err := os.ReadFile("../tests/linux_tests.json")
+	if err != nil {
+		t.Fatalf("Failed to read test file: %v", err)
+	}
+
+	var tests []TestCase
+	if err := json.Unmarshal(testFileData, &tests); err != nil {
+		t.Fatalf("Failed to unmarshal test cases: %v", err)
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.ID, func(t *testing.T) {
+			inputBytes := []byte(tc.Input)
+			var resultBytes []byte
+
+			if bytes.HasPrefix(bytes.TrimSpace(inputBytes), []byte("{")) {
+				resultBytes = RedactAllJSONStrings(inputBytes, root)
+			} else {
+				resultBytes = RedactBytes(inputBytes, root)
+			}
+
+			if string(resultBytes) != tc.Expected {
+				t.Errorf("\nInput:    %s\nExpected: %s\nGot:      %s", tc.Input, tc.Expected, string(resultBytes))
+			}
+		})
+	}
+}
 func TestWindowsRules(t *testing.T) {
 	// 1. Initialize the Trie
 	root := NewTrie("*", 2, 0)

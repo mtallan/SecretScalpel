@@ -1,17 +1,112 @@
 [
   {
-    "rule_id": "LINUX-MYSQL-P",
+    "id": "LINUX-MYSQL-P-ATTACHED",
     "input": "mysql -u root -pPassword123",
     "expected": "mysql -u root -p***********"
   },
   {
-    "rule_id": "LINUX-DOCKER-LOGIN",
+    "id": "LINUX-MYSQL-P-SEPARATED",
+    "input": "mysql -u root -p Password123",
+    "expected": "mysql -u root -p ***********"
+  },
+  {
+    "id": "LINUX-MYSQL-PASSWORD-LONG",
+    "input": "mysql -u root --password Password123",
+    "expected": "mysql -u root --password ***********"
+  },
+  {
+    "id": "LINUX-MYSQLDUMP-P-SEPARATED",
+    "input": "mysqldump -u root -p Password123 mydb",
+    "expected": "mysqldump -u root -p *********** mydb"
+  },
+  {
+    "id": "LINUX-MYSQLDUMP-PASSWORD-LONG",
+    "input": "mysqldump -u root --password Password123 mydb",
+    "expected": "mysqldump -u root --password *********** mydb"
+  },
+  {
+    "id": "LINUX-PSQL-PASSWORD-SHORT",
+    "input": "psql -U admin -W MySecret",
+    "expected": "psql -U admin -W ********"
+  },
+  {
+    "id": "LINUX-PSQL-PASSWORD-LONG",
+    "input": "psql --username admin --password MySecret",
+    "expected": "psql --username admin --password ********"
+  },
+  {
+    "id": "LINUX-MONGODUMP-PASSWORD",
+    "input": "mongodump --password MyMongoSecret",
+    "expected": "mongodump --password *************"
+  },
+  {
+    "id": "LINUX-MONGORESTORE-PASSWORD",
+    "input": "mongorestore --password MyMongoSecret",
+    "expected": "mongorestore --password *************"
+  },
+  {
+    "id": "LINUX-REDIS-CLI-AUTH",
+    "input": "redis-cli -a MyRedisPassword",
+    "expected": "redis-cli -a ***************"
+  },
+  {
+    "id": "LINUX-CURL-U-BASIC",
+    "input": "curl -u admin:MySecret https://api.example.com",
+    "expected": "curl -u ************ https://api.example.com"
+  },
+  {
+    "id": "LINUX-CURL-USER-BASIC",
+    "input": "curl --user admin:MySecret https://api.example.com",
+    "expected": "curl --user ************ https://api.example.com"
+  },
+  {
+    "id": "LINUX-WGET-PASSWORD",
+    "input": "wget --password MySecret https://example.com/file",
+    "expected": "wget --password ******** https://example.com/file"
+  },
+  {
+    "id": "LINUX-WGET-HTTP-PASSWORD",
+    "input": "wget --http-password MySecret https://example.com/file",
+    "expected": "wget --http-password ******** https://example.com/file"
+  },
+  {
+    "id": "LINUX-SSHPASS-P",
+    "input": "sshpass -p MySSHPassword ssh user@host",
+    "expected": "sshpass -p ************* ssh user@host"
+  },
+  {
+    "id": "LINUX-DOCKER-LOGIN-PASSWORD",
     "input": "docker login --username bob --password MyDockerSecret",
     "expected": "docker login --username bob --password **************"
   },
   {
-    "rule_id": "LINUX-SUDO-S",
-    "input": "echo 'Pass@123' | sudo -S apt update",
-    "expected": "echo '********' | sudo -S apt update"
+    "id": "LINUX-DOCKER-LOGIN-SHORT",
+    "input": "docker login --username bob -p MyDockerSecret",
+    "expected": "docker login --username bob -p **************"
+  },
+  {
+    "id": "LINUX-SUDO-S-PIPE",
+    "input": "echo MyPassword | sudo -S apt update",
+    "expected": "echo ********** | sudo -S apt update"
+  },
+  {
+    "id": "LINUX-OPENSSL-PASSIN",
+    "input": "openssl rsa -passin pass:MySecret -in key.pem",
+    "expected": "openssl rsa -passin pass:******** -in key.pem"
+  },
+  {
+    "id": "LINUX-OPENSSL-PASSOUT",
+    "input": "openssl rsa -passout pass:MySecret -out key.pem",
+    "expected": "openssl rsa -passout pass:******** -out key.pem"
+  },
+  {
+    "id": "LINUX-NEGATIVE-NO-PASSWORD",
+    "input": "mysql -u root --host localhost --port 3306",
+    "expected": "mysql -u root --host localhost --port 3306"
+  },
+  {
+    "id": "LINUX-NEGATIVE-GREP",
+    "input": "grep -p pattern file.txt",
+    "expected": "grep -p pattern file.txt"
   }
 ]
