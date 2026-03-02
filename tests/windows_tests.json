@@ -16,8 +16,8 @@
   },
   {
     "id": "WIN-SCHTASKS-CHANGE-RP",
-    "input": "schtasks change ru bob rp Secret123",
-    "expected": "schtasks change ru bob rp *********"
+    "input": "schtasks /change /ru bob /rp Secret123",
+    "expected": "schtasks /change /ru bob /rp *********"
   },
   {
     "id": "WIN-WMIC-REMOTE",
@@ -82,7 +82,7 @@
   {
     "id": "net-use-inline-password",
     "input": "net use Z: \\fileserver\\share alice P@ssw0rd",
-    "expected": "net use Z: \\\\fileserver\\share alice ********"
+    "expected": "net use Z: \\fileserver\\share alice ********"
   },
   {
     "id": "net-use-inline-password-domain",

@@ -33,24 +33,24 @@ type TrieNode struct {
 	Meta          *RuleMeta
 }
 
-type Trie struct {
-	Root        *TrieNode
-	MaxDepth    int
-	DefaultMask string
-	RegexRules  []*RegexRule
-}
-
 var placeholderRegex = regexp.MustCompile(`^<(redact|any):(.+)>$`)
+
+type Trie struct {
+	Root       *TrieNode
+	MaxDepth   int
+	GlobalMask string // Renamed from DefaultMask
+	RegexRules []*RegexRule
+}
 
 func NewTrie(mask string, min int, max int) *Trie {
 	return &Trie{
-		Root:        &TrieNode{Children: make(map[string]*TrieNode)},
-		DefaultMask: mask,
+		Root:       &TrieNode{Children: make(map[string]*TrieNode)},
+		GlobalMask: mask, // Initialize the GlobalMask
 	}
 }
 
 func (t *Trie) AddRegexRule(id, pattern, mask string, offset, priority int) {
-	re, err := regexp.Compile("(?i)" + pattern)
+	re, err := regexp.Compile(pattern)
 	if err != nil {
 		fmt.Printf("Invalid regex: %v\n", err)
 		return

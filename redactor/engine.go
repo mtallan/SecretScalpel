@@ -2,6 +2,7 @@ package redactor
 
 import (
 	"bytes"
+	"fmt"
 	"sort"
 	"strings"
 )
@@ -36,14 +37,21 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 	// =========================================================
 	// PHASE 0: Global Regex Scanning (Capture Group Aware)
 	// =========================================================
+	// PHASE 0: Global Regex Scanning
 	for _, rr := range trie.RegexRules {
 		matches := rr.Re.FindAllSubmatchIndex(raw, -1)
 		for _, match := range matches {
+			// Start by assuming we redact the full match (Group 0)
 			start, end := match[0], match[1]
-			// If capture group 1 exists, redact ONLY that group
-			if len(match) >= 4 && match[2] != -1 {
-				start = match[2]
-				end = match[3]
+
+			// DYNAMIC SCAN: Iterate through all capture groups (starting at Index 2 / Group 1).
+			// We keep updating start/end so that the LAST valid group in the
+			// regex is the one that gets redacted.
+			for i := 2; i < len(match); i += 2 {
+				if match[i] != -1 {
+					start = match[i]
+					end = match[i+1]
+				}
 			}
 
 			toRedact = append(toRedact, pendingRedaction{
@@ -73,6 +81,11 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 		sPos := currentPos + (advance - len(val))
 		ePos := currentPos + advance
 		window = append(window, Token{Word: strings.ToLower(string(val)), Start: sPos, End: ePos})
+		var currentWindowWords []string
+		for _, t := range window {
+			currentWindowWords = append(currentWindowWords, t.Word)
+		}
+		fmt.Printf("[TRIE DEBUG] Window: %v\n", currentWindowWords)
 		if len(window) > windowSize {
 			window = window[1:]
 		}
@@ -82,7 +95,7 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 			for j := i; j < len(window); j++ {
 				word := window[j].Word
 
-				// Priority: Literal -> Regex Edge -> Wildcard (*)
+				// Match Logic: Literal -> Regex Edge -> Wildcard
 				next, ok := curr.Children[word]
 				if !ok {
 					for _, edge := range curr.RegexChildren {
@@ -135,18 +148,15 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 	}
 
 	// =========================================================
-	// PHASE 2: Reconstruction (Priority Pre-emption)
+	// PHASE 2: Reconstruction (Priority & Global Masking)
 	// =========================================================
 
-	// Sort to process highest priority (lowest number) first.
-	// This ensures Priority 1 rules get "first dibs" on claiming bytes.
+	// 1. Sort by Priority (Lower number = Higher Priority)
 	sort.Slice(toRedact, func(i, j int) bool {
 		if toRedact[i].priority != toRedact[j].priority {
 			return toRedact[i].priority < toRedact[j].priority
 		}
-		lenI := toRedact[i].matchEnd - toRedact[i].matchStart
-		lenJ := toRedact[j].matchEnd - toRedact[j].matchStart
-		return lenI > lenJ
+		return (toRedact[i].matchEnd - toRedact[i].matchStart) > (toRedact[j].matchEnd - toRedact[j].matchStart)
 	})
 
 	claimed := make([]bool, len(raw))
@@ -157,10 +167,9 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 	}
 	var resolved []finalInt
 
-	// 2. Claim Bytes
+	// 2. Claim Bytes and Resolve Masks
 	for _, r := range toRedact {
 		overlap := false
-		// If ANY byte is already claimed by a better rule, abort.
 		for k := r.matchStart; k < r.matchEnd; k++ {
 			if claimed[k] {
 				overlap = true
@@ -171,7 +180,7 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 			continue
 		}
 
-		// Lock down these bytes for this winning rule
+		// Lock these bytes
 		for k := r.matchStart; k < r.matchEnd; k++ {
 			claimed[k] = true
 		}
@@ -182,10 +191,23 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 				continue
 			}
 
+			// --- THE GLOBAL MASK FIX ---
 			maskStr := t.mask
-			if maskStr == "" || maskStr == "*" {
-				maskStr = string(bytes.Repeat([]byte("*"), t.end-actualStart))
+			if maskStr == "" {
+				// Use the Global Default set in main.go (e.g. "REDACTED")
+				maskStr = trie.GlobalMask
 			}
+
+			// If the mask is explicitly "*", generate length-matched stars
+			if maskStr == "*" {
+				maskLen := t.end - actualStart
+				if maskLen < 0 {
+					maskLen = 0
+				}
+				maskStr = string(bytes.Repeat([]byte("*"), maskLen))
+			}
+			// ---------------------------
+
 			resolved = append(resolved, finalInt{start: actualStart, end: t.end, mask: maskStr})
 		}
 	}
