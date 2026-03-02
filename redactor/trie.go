@@ -72,10 +72,11 @@ func (t *Trie) AddRule(id string, phrase []string, mask string, min int, max int
 
 		// 1. Check for Regex Placeholders
 		if matches := placeholderRegex.FindStringSubmatch(clean); len(matches) > 0 {
+
 			if matches[1] == "redact" {
 				redactIndices = append(redactIndices, i)
+				//fmt.Printf("DEBUG: redact placeholder at index %d in rule %s\n", i, id)
 			}
-
 			pattern := "(?i)" + matches[2]
 			re, err := regexp.Compile(pattern)
 			if err != nil {

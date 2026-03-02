@@ -4,9 +4,17 @@ package redactor
 import (
 	"bytes"
 	"errors"
+	"sync"
 )
 
 var ErrEOF = errors.New("EOF")
+var jsonBufPool = sync.Pool{
+	New: func() any {
+		b := new(bytes.Buffer)
+		b.Grow(256 * 1024)
+		return b
+	},
+}
 
 // IsGapChar strictly splits on whitespace and quotes using raw bytes.
 func IsGapChar(c byte) bool {
@@ -37,37 +45,23 @@ func LogSplitter(data []byte, toLower bool) (int, []byte, error) {
 	}
 
 	end := start
-	escaped := false
-
 	for end < len(data) {
-		c := data[end]
-
-		if escaped {
-			escaped = false
-			end++
-			continue
-		}
-
-		if c == '\\' {
-			escaped = true
-			end++
-			continue
-		}
-
-		if IsGapChar(c) {
+		if IsGapChar(data[end]) {
 			break
 		}
-
 		end++
 	}
 
 	val := data[start:end]
 	return end, val, nil
 }
-
 func RedactAllJSONStrings(raw []byte, trie *Trie) []byte {
-	var result bytes.Buffer
-	result.Grow(len(raw))
+	result := jsonBufPool.Get().(*bytes.Buffer)
+	result.Reset()
+	if result.Cap() < len(raw) {
+		result.Grow(len(raw))
+	}
+	defer jsonBufPool.Put(result)
 
 	cursor := 0
 	inString := false
@@ -97,8 +91,19 @@ func RedactAllJSONStrings(raw []byte, trie *Trie) []byte {
 				strContent := raw[stringStart:i]
 
 				if len(strContent) > 0 {
-					redacted := RedactBytes(strContent, trie)
-					result.Write(redacted)
+					hasTrigger := false
+					for _, c := range strContent {
+						if c == '@' || c == '=' || c == '/' || c == '-' || c == ' ' || c == '\t' {
+							hasTrigger = true
+							break
+						}
+					}
+					if hasTrigger {
+						redacted := RedactBytes(strContent, trie)
+						result.Write(redacted)
+					} else {
+						result.Write(strContent)
+					}
 				}
 
 				result.WriteByte('"')

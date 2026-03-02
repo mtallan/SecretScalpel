@@ -23,7 +23,7 @@ func main() {
     "ProcessId": 8422,
     "ParentProcessName": "cmd.exe",
     "FileName": "psexec64.exe",
-    "CommandLine": "psexec64.exe \\\\Workstation-Secure-99 -u CORP\\svc-deploy -p P@ssw0rd123! cmd.exe /c \"net user guest /active:yes\"",
+    "CommandLine": "psexec64 \\\\Workstation-Secure-99 -u CORP\\svc-deploy -p P@ssw0rd123! cmd.exe /c \"net user guest /active:yes\"",
     "SensitiveDataDetected": {
       "Type": "Password",
       "Value": "P@ssw0rd123!"
@@ -35,4 +35,16 @@ func main() {
 	out := redactor.RedactAllJSONStrings(testInput, root)
 	//out := redactor.RedactBytes(testInput, root)
 	fmt.Printf("Result:\n%s\n", out)
+
+	tests := [][]byte{
+		[]byte(`psexec64 -u alice -p P@ssw0rd123! cmd.exe`),
+		[]byte(`psexec64 \\server -u alice -p P@ssw0rd123! cmd.exe`),
+		[]byte(`psexec64 \\\\server -u alice -p P@ssw0rd123! cmd.exe`),
+		[]byte(`psexec64 \\\\server -u CORP\\alice -p P@ssw0rd123! cmd.exe`),
+		[]byte(`psexec64 \\\\server -u CORP\\alice -p P@ssw0rd123! cmd.exe /c "net user"`),
+	}
+	for _, t := range tests {
+		out := redactor.RedactBytes(t, root)
+		fmt.Printf("IN:  %s\nOUT: %s\n\n", t, out)
+	}
 }

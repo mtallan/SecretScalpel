@@ -152,3 +152,90 @@ func BenchmarkOrchestrator_1MB_JSONWalker(b *testing.B) {
 		_ = ProcessStream(bytes.NewReader(rawBytes), io.Discard, root, true, 0)
 	}
 }
+func BenchmarkOrchestrator_1MB_Realistic(b *testing.B) {
+	root := NewTrie("********", 2, 0)
+	err := LoadRulesFromDir("../rules", root)
+	if err != nil {
+		b.Fatalf("Failed to load rules: %v", err)
+	}
+
+	// 1 secret per ~20 normal lines — closer to real MSSP data
+	chunk := []byte(
+		`{"log": "User alice logged in from 10.0.0.1", "level": "INFO"}` + "\n" +
+			`{"log": "File /etc/config read successfully", "level": "DEBUG"}` + "\n" +
+			`{"log": "Service restarted on port 8080", "level": "INFO"}` + "\n" +
+			`{"log": "Health check passed", "level": "INFO"}` + "\n" +
+			`{"log": "Request completed in 42ms", "level": "DEBUG"}` + "\n" +
+			`{"log": "User bob logged out", "level": "INFO"}` + "\n" +
+			`{"log": "Disk usage at 42%", "level": "INFO"}` + "\n" +
+			`{"log": "Connection from 192.168.1.5 established", "level": "DEBUG"}` + "\n" +
+			`{"log": "Cache miss for key user:1234", "level": "DEBUG"}` + "\n" +
+			`{"log": "Scheduled job completed", "level": "INFO"}` + "\n" +
+			`{"log": "Memory usage normal", "level": "INFO"}` + "\n" +
+			`{"log": "API request to /health returned 200", "level": "DEBUG"}` + "\n" +
+			`{"log": "User session expired", "level": "INFO"}` + "\n" +
+			`{"log": "Config reload triggered", "level": "INFO"}` + "\n" +
+			`{"log": "Thread pool size adjusted to 8", "level": "DEBUG"}` + "\n" +
+			`{"log": "Backup completed successfully", "level": "INFO"}` + "\n" +
+			`{"log": "Network latency 2ms", "level": "DEBUG"}` + "\n" +
+			`{"log": "Queue depth 0", "level": "INFO"}` + "\n" +
+			`{"log": "TLS handshake completed", "level": "DEBUG"}` + "\n" +
+			`{"log": "psexec -u admin -p SuperSecret! cmd.exe", "level": "WARN"}` + "\n")
+
+	var input bytes.Buffer
+	for input.Len() < 1024*1024 {
+		input.Write(chunk)
+	}
+	rawBytes := input.Bytes()
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	b.SetBytes(int64(len(rawBytes)))
+
+	for i := 0; i < b.N; i++ {
+		_ = ProcessStream(bytes.NewReader(rawBytes), io.Discard, root, true, 0)
+	}
+}
+func BenchmarkOrchestrator_100MB_Realistic(b *testing.B) {
+	root := NewTrie("********", 2, 0)
+	err := LoadRulesFromDir("../rules", root)
+	if err != nil {
+		b.Fatalf("Failed to load rules: %v", err)
+	}
+
+	chunk := []byte(
+		`{"log": "User alice logged in from 10.0.0.1", "level": "INFO"}` + "\n" +
+			`{"log": "File /etc/config read successfully", "level": "DEBUG"}` + "\n" +
+			`{"log": "Service restarted on port 8080", "level": "INFO"}` + "\n" +
+			`{"log": "Health check passed", "level": "INFO"}` + "\n" +
+			`{"log": "Request completed in 42ms", "level": "DEBUG"}` + "\n" +
+			`{"log": "User bob logged out", "level": "INFO"}` + "\n" +
+			`{"log": "Disk usage at 42%", "level": "INFO"}` + "\n" +
+			`{"log": "Connection from 192.168.1.5 established", "level": "DEBUG"}` + "\n" +
+			`{"log": "Cache miss for key user:1234", "level": "DEBUG"}` + "\n" +
+			`{"log": "Scheduled job completed", "level": "INFO"}` + "\n" +
+			`{"log": "Memory usage normal", "level": "INFO"}` + "\n" +
+			`{"log": "API request to /health returned 200", "level": "DEBUG"}` + "\n" +
+			`{"log": "User session expired", "level": "INFO"}` + "\n" +
+			`{"log": "Config reload triggered", "level": "INFO"}` + "\n" +
+			`{"log": "Thread pool size adjusted to 8", "level": "DEBUG"}` + "\n" +
+			`{"log": "Backup completed successfully", "level": "INFO"}` + "\n" +
+			`{"log": "Network latency 2ms", "level": "DEBUG"}` + "\n" +
+			`{"log": "Queue depth 0", "level": "INFO"}` + "\n" +
+			`{"log": "TLS handshake completed", "level": "DEBUG"}` + "\n" +
+			`{"log": "psexec -u admin -p SuperSecret! cmd.exe", "level": "WARN"}` + "\n")
+
+	var input bytes.Buffer
+	for input.Len() < 100*1024*1024 {
+		input.Write(chunk)
+	}
+	rawBytes := input.Bytes()
+
+	b.ResetTimer()
+	b.ReportAllocs()
+	b.SetBytes(int64(len(rawBytes)))
+
+	for i := 0; i < b.N; i++ {
+		_ = ProcessStream(bytes.NewReader(rawBytes), io.Discard, root, true, 0)
+	}
+}

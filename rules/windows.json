@@ -1,33 +1,12 @@
 [
 
 {
-  "id": "PHASE0-DLP-UNIVERSAL-FLAGS",
-  "phrase": ["(?i)(?:^|\\s)[/-]{1,2}(password|pass|pwd|p|rp|pw)[\\s:=]*(?:\"([^\"]+)\"|'([^']+)'|([^\\s\"']+))"],
+  "id": "PHASE0-COMBINED",
+  "phrase": ["(?i)(?:(?:--|/)(?:password|pass|pwd|pw)[:=]['\"]?([^'\"\\s]+)['\"]?)|(?:(?:--|/)(?:p|rp)[=:]([^\\s'\"]+))|(?:(?:[a-zA-Z0-9_.-]+[\\\\/])?[a-zA-Z0-9_.-]+:([^\\s:]+)@[a-zA-Z0-9_.-]+)|(?:https?://[^\\s:]+:([^\\s@:]+)@[^\\s/]+)|(?:(?:Password|Pwd)\\s*=\\s*([^;\"']+))"],
   "isRegex": true,
-  "priority": 5,
+  "priority": 4,
   "enabled": true
 },
-{
-    "id": "PHASE0-IMPACKET-AUTH",
-    "phrase": ["(?i)(?:^|\\s)(?:[a-zA-Z0-9_.-]+[\\\\/])?[a-zA-Z0-9_.-]+:([^\\s:]+)@[a-zA-Z0-9_.-]+"],
-    "isRegex": true,
-    "priority": 4,
-    "enabled": true
-  },
-  {
-    "id": "PHASE0-URI-BASIC-AUTH",
-    "phrase": ["(?i)https?://[^\\s:]+:([^\\s@:]+)@[^\\s/]+"],
-    "isRegex": true,
-    "priority": 4,
-    "enabled": true
-  },
-  {
-    "id": "PHASE0-DB-CONNECTION-STRING",
-    "phrase": ["(?i)(?:Password|Pwd)\\s*=\\s*([^;\"']+)"],
-    "isRegex": true,
-    "priority": 4,
-    "enabled": true
-  },
   {
     "id": "WIN-ECHO-PIPE-RUNAS",
     "phrase": ["echo", "<REDACT>", "|", "runas"],
@@ -46,43 +25,33 @@
     "priority": 1, 
     "enabled": true 
   },
-{
-  "id": "DLP-JSON-KEY-VALUE-CATCHER",
-  "phrase": ["(?i)\"(Value|password|secret|pwd|credential)\"\\s*:\\s*\"([^\"]+)\""],
-  "isRegex": true,
-  "priority": 10,
-  "enabled": true
-},
-  { 
-    "id": "NET-USE-TARGET-PASS", 
-    "phrase": ["net", "use", "<any:^[\\\\/]+.*>", "<REDACT>"], 
-    "priority": 4, 
-    "enabled": true 
-  },
-  { 
-    "id": "NET-USE-TARGET-PASS-DOMAIN", 
-    "phrase": ["net", "use", "<any:^[\\\\/]+.*>", "<REDACT>", "domain"], 
-    "priority": 3, 
-    "enabled": true 
-  },
-  { 
-    "id": "NET-USE-DRIVE-TARGET-USER-PASS", 
-    "phrase": ["net", "use", "<any:^[a-zA-Z]:$>", "<any:^[\\\\/]+.*>", "<any>", "<REDACT>"], 
-    "priority": 2, 
-    "enabled": true 
-  },
-  { 
-    "id": "NET-USE-DRIVE-TARGET-USER-PASS-DOMAIN", 
-    "phrase": ["net", "use", "<any:^[a-zA-Z]:$>", "<any:^[\\\\/]+.*>", "<any>", "<REDACT>", "domain"], 
-    "priority": 1, 
-    "enabled": true 
-  },
+
+{ "id": "NET-USE-TARGET-PASS", "phrase": ["net", "use", "<any:^[\\\\/]+.*>", "<REDACT>"], "priority": 4, "enabled": true },
+{ "id": "NET-USE-TARGET-PASS-DOMAIN", "phrase": ["net", "use", "<any:^[\\\\/]+.*>", "<REDACT>", "domain"], "priority": 3, "enabled": true },
+{ "id": "NET-USE-DRIVE-TARGET-USER-PASS", "phrase": ["net", "use", "<any:^[a-zA-Z]:$>", "<any:^[\\\\/]+.*>", "<any>", "<REDACT>"], "priority": 2, "enabled": true },
+{ "id": "NET-USE-DRIVE-TARGET-USER-PASS-DOMAIN", "phrase": ["net", "use", "<any:^[a-zA-Z]:$>", "<any:^[\\\\/]+.*>", "<any>", "<REDACT>", "domain"], "priority": 1, "enabled": true },
   { "id": "WIN-NET-USER-DOMAIN", "phrase": ["net", "user", "<any>", "<REDACT>", "domain"], "priority": 1, "enabled": true },
   { "id": "WIN-CMDKEY-GENERIC", "phrase": ["cmdkey", "target", "user", "<any>", "pass", "<REDACT>"], "priority": 1, "enabled": true },
   { "id": "WIN-SCHTASKS", "phrase": ["schtasks", "/change", "/ru", "<any>", "/rp", "<REDACT>"], "priority": 1, "enabled": true },
   { "id": "WIN-WMIC", "phrase": ["wmic", "node", "<any>", "user", "<any>", "password", "<REDACT>"], "priority": 1, "enabled": true },
-  { "id": "WIN-CERTUTIL", "phrase": ["certutil", "p", "<REDACT>"], "priority": 1, "enabled": true },
+  { "id": "WIN-CERTUTIL", "phrase": ["certutil", "p", "<REDACT>"], "priority": 1, "enabled": true }, 
+  {"id": "NET-USE-TARGET-PASS", "phrase": ["net", "use", "<any:^[\\\\/]+.*>", "<REDACT>"], "priority": 4, "enabled": true },
+{ "id": "NET-USE-TARGET-PASS-DOMAIN", "phrase": ["net", "use", "<any:^[\\\\/]+.*>", "<REDACT>", "domain"], "priority": 3, "enabled": true },
+{ "id": "NET-USE-DRIVE-TARGET-USER-PASS", "phrase": ["net", "use", "<any:^[a-zA-Z]:$>", "<any:^[\\\\/]+.*>", "<any>", "<REDACT>"], "priority": 2, "enabled": true },
+{ "id": "NET-USE-DRIVE-TARGET-USER-PASS-DOMAIN", "phrase": ["net", "use", "<any:^[a-zA-Z]:$>", "<any:^[\\\\/]+.*>", "<any>", "<REDACT>", "domain"], "priority": 1, "enabled": true },
   { "id": "WIN-PSEXEC", "phrase": ["psexec", "<any>", "u", "<any>", "p", "<REDACT>", "cmd"], "priority": 1, "enabled": true },
+{ "id": "WIN-PSEXEC-SEPARATED", "phrase": ["psexec", "-u", "<any>", "-p", "<REDACT>"], "priority": 1, "enabled": true },
+{ "id": "WIN-PSEXEC64-SEPARATED", "phrase": ["psexec64.exe", "-u", "<any>", "-p", "<REDACT>"], "priority": 1, "enabled": true },
+{ "id": "WIN-PSEXEC-SEPARATED-CMD", "phrase": ["psexec", "-u", "<any>", "-p", "<REDACT>", "<any>"], "priority": 1, "enabled": true },
+{ "id": "WIN-PSEXEC64-SEPARATED-CMD", "phrase": ["psexec64.exe", "-u", "<any>", "-p", "<REDACT>", "<any>"], "priority": 1, "enabled": true },
+{ "id": "WIN-PSEXEC-ATTACHED", "phrase": ["psexec", "<any:^-u.+>", "<redact:^-p.+>"], "priority": 1, "redact_offset": 2, "enabled": true },
+{ "id": "WIN-PSEXEC64-ATTACHED", "phrase": ["psexec64.exe", "<any:^-u.+>", "<redact:^-p.+>"], "priority": 1, "redact_offset": 2, "enabled": true },
+{ "id": "WIN-PSEXEC64-SEPARATED-NOEXT", "phrase": ["psexec64", "<any>", "-u", "<any>", "-p", "<REDACT>"], "priority": 1, "enabled": true },
+{ "id": "WIN-PSEXEC64-SEPARATED-CMD-NOEXT", "phrase": ["psexec64", "<any>", "-u", "<any>", "-p", "<REDACT>", "<any>"], "priority": 1, "enabled": true },
+{ "id": "WIN-PSEXEC-SEPARATED", "phrase": ["psexec", "<any>", "-u", "<any>", "-p", "<REDACT>"], "priority": 1, "enabled": true },
+{ "id": "WIN-PSEXEC-SEPARATED-CMD", "phrase": ["psexec", "<any>", "-u", "<any>", "-p", "<REDACT>", "<any>"], "priority": 1, "enabled": true },
+{ "id": "WIN-PSEXEC64-SEPARATED-NOHOST", "phrase": ["psexec64", "-u", "<any>", "-p", "<REDACT>"], "priority": 1, "enabled": true },
+{ "id": "WIN-PSEXEC-SEPARATED-NOHOST", "phrase": ["psexec", "-u", "<any>", "-p", "<REDACT>"], "priority": 1, "enabled": true },
   { "id": "WIN-SQLCMD", "phrase": ["sqlcmd", "u", "<any>", "p", "<REDACT>"], "priority": 1, "enabled": true },
   { "id": "WIN-APPCMD", "phrase": ["appcmd", "set", "config", "username", "<any>", "password", "<REDACT>"], "priority": 1, "enabled": true },
   { "id": "WIN-AZ-LOGIN", "phrase": ["az", "login", "--username", "<any>", "--password", "<REDACT>"], "priority": 1, "enabled": true },

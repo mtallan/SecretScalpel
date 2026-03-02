@@ -55,6 +55,22 @@ var workspacePool = sync.Pool{
 	},
 }
 
+type byPriority []pendingRedaction
+
+func (b byPriority) Len() int      { return len(b) }
+func (b byPriority) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
+func (b byPriority) Less(i, j int) bool {
+	if b[i].priority != b[j].priority {
+		return b[i].priority < b[j].priority
+	}
+	return (b[i].matchEnd - b[i].matchStart) > (b[j].matchEnd - b[j].matchStart)
+}
+
+type byStart []finalInt
+
+func (b byStart) Len() int           { return len(b) }
+func (b byStart) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
+func (b byStart) Less(i, j int) bool { return b[i].start < b[j].start }
 func RedactBytes(raw []byte, trie *Trie) []byte {
 	if trie == nil || trie.Root == nil || len(raw) == 0 {
 		return raw
@@ -132,6 +148,8 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 
 	for i := 0; i < len(tokens); i++ {
 		curr := trie.Root
+		//fmt.Printf("DEBUG root has %d literal children, %d regex children\n",
+		//len(curr.Children), len(curr.RegexChildren))
 		for j := i; j < len(tokens) && j < i+windowSize; j++ {
 			tok := tokens[j]
 			wordRaw := raw[tok.Start:tok.End]
@@ -153,6 +171,7 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 			if !ok {
 				for _, edge := range curr.RegexChildren {
 					if edge.Re.Match(wordRaw) {
+						//fmt.Printf("DEBUG: regex edge matched %q\n", wordRaw)
 						next = edge.Node
 						ok = true
 						break
@@ -201,12 +220,7 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 	// =========================================================
 	// PHASE 2: Reconstruction & Overlap Protection
 	// =========================================================
-	sort.Slice(ws.toRedact, func(i, j int) bool {
-		if ws.toRedact[i].priority != ws.toRedact[j].priority {
-			return ws.toRedact[i].priority < ws.toRedact[j].priority
-		}
-		return (ws.toRedact[i].matchEnd - ws.toRedact[i].matchStart) > (ws.toRedact[j].matchEnd - ws.toRedact[j].matchStart)
-	})
+	sort.Sort(byPriority(ws.toRedact))
 
 	for _, r := range ws.toRedact {
 		overlap := false
@@ -248,9 +262,7 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 		}
 	}
 
-	sort.Slice(ws.resolved, func(i, j int) bool {
-		return ws.resolved[i].start < ws.resolved[j].start
-	})
+	sort.Sort(byStart(ws.resolved))
 
 	var filtered []finalInt
 	if len(ws.resolved) > 0 {

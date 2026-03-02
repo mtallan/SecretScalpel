@@ -82,7 +82,7 @@ func ProcessStream(r io.Reader, w io.Writer, trie *Trie, isJSON bool, workers in
 
 	// 4. The Block Reader (The Fix)
 	// We read lines, but pack them into a 256KB buffer before sending to a worker.
-	reader := bufio.NewReaderSize(r, 1024*1024)
+	reader := bufio.NewReaderSize(r, 4*1024*1024)
 	index := 0
 
 	// Pre-allocate a large chunk to avoid slice growth allocations
@@ -91,12 +91,11 @@ func ProcessStream(r io.Reader, w io.Writer, trie *Trie, isJSON bool, workers in
 	currentBatch.Grow(chunkSize + 4096)
 
 	for {
-		line, err := reader.ReadBytes('\n')
+		line, err := reader.ReadSlice('\n')
 		if len(line) > 0 {
 			currentBatch.Write(line)
-
-			// If we've hit our chunk limit, dispatch it to a core
 			if currentBatch.Len() >= chunkSize {
+
 				// We must copy the batch because we are resetting the buffer
 				batchCopy := make([]byte, currentBatch.Len())
 				copy(batchCopy, currentBatch.Bytes())
@@ -107,6 +106,9 @@ func ProcessStream(r io.Reader, w io.Writer, trie *Trie, isJSON bool, workers in
 			}
 		}
 		if err != nil {
+			if err == bufio.ErrBufferFull {
+				continue
+			}
 			if err != io.EOF {
 				return err
 			}
