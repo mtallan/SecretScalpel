@@ -4,8 +4,28 @@ package redactor
 import (
 	"bytes"
 	"errors"
+	"strings"
 	"sync"
 )
+
+type keyValueState int
+
+const (
+	stateKey keyValueState = iota
+	stateValue
+)
+
+// Keys whose values should always be redacted
+var sensitiveKeys = map[string]bool{
+	"value":      true,
+	"password":   true,
+	"secret":     true,
+	"pwd":        true,
+	"credential": true,
+	"token":      true,
+	"apikey":     true,
+	"api_key":    true,
+}
 
 var ErrEOF = errors.New("EOF")
 var jsonBufPool = sync.Pool{
@@ -55,6 +75,7 @@ func LogSplitter(data []byte, toLower bool) (int, []byte, error) {
 	val := data[start:end]
 	return end, val, nil
 }
+
 func RedactAllJSONStrings(raw []byte, trie *Trie) []byte {
 	result := jsonBufPool.Get().(*bytes.Buffer)
 	result.Reset()
@@ -67,6 +88,8 @@ func RedactAllJSONStrings(raw []byte, trie *Trie) []byte {
 	inString := false
 	escaped := false
 	stringStart := 0
+	afterColon := false
+	lastKey := ""
 
 	for i := 0; i < len(raw); i++ {
 		c := raw[i]
@@ -81,6 +104,14 @@ func RedactAllJSONStrings(raw []byte, trie *Trie) []byte {
 			continue
 		}
 
+		if !inString {
+			if c == ':' {
+				afterColon = true
+			} else if c == ',' || c == '{' || c == '\n' {
+				afterColon = false
+			}
+		}
+
 		if c == '"' {
 			if !inString {
 				inString = true
@@ -90,20 +121,35 @@ func RedactAllJSONStrings(raw []byte, trie *Trie) []byte {
 				inString = false
 				strContent := raw[stringStart:i]
 
-				if len(strContent) > 0 {
-					hasTrigger := false
-					for _, c := range strContent {
-						if c == '@' || c == '=' || c == '/' || c == '-' || c == ' ' || c == '\t' {
-							hasTrigger = true
-							break
+				if !afterColon {
+					// this is a key
+					lastKey = strings.ToLower(string(strContent))
+					result.Write(strContent)
+				} else {
+					// this is a value
+					if len(strContent) > 0 {
+						if sensitiveKeys[lastKey] {
+							// always redact sensitive key values
+							for range strContent {
+								result.WriteByte('*')
+							}
+						} else {
+							hasTrigger := false
+							for _, c := range strContent {
+								if c == '@' || c == '=' || c == '/' || c == '-' || c == ' ' || c == '\t' {
+									hasTrigger = true
+									break
+								}
+							}
+							if hasTrigger {
+								redacted := RedactBytes(strContent, trie)
+								result.Write(redacted)
+							} else {
+								result.Write(strContent)
+							}
 						}
 					}
-					if hasTrigger {
-						redacted := RedactBytes(strContent, trie)
-						result.Write(redacted)
-					} else {
-						result.Write(strContent)
-					}
+					lastKey = ""
 				}
 
 				result.WriteByte('"')

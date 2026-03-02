@@ -1,50 +1,28 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"os"
 	"redactbox/redactor"
+	"runtime"
 )
 
 func main() {
-	root := redactor.NewTrie("[REDACTED]", 2, 0)
+	rulesDir := flag.String("rules", "./rules", "path to rules directory")
+	jsonMode := flag.Bool("json", false, "enable JSON mode (preserves JSON structure)")
+	workers := flag.Int("workers", runtime.NumCPU(), "number of worker goroutines")
+	mask := flag.String("mask", "[REDACTED]", "redaction mask string")
+	flag.Parse()
 
-	if err := redactor.LoadRulesFromDir("./rules", root); err != nil {
-		fmt.Printf("Failed to load rules: %v\n", err)
-		return
+	root := redactor.NewTrie(*mask, 0, 0)
+	if err := redactor.LoadRulesFromDir(*rulesDir, root); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to load rules: %v\n", err)
+		os.Exit(1)
 	}
 
-	testInput := []byte(`{
-  "AlertId": "ev-9921-bc10-4421",
-  "Title": "Cleartext password detected in command line",
-  "Severity": "High",
-  "Category": "CredentialAccess",
-  "Description": "A process was launched with a command line that appears to contain a plaintext password.",
-  "Evidence": {
-    "ProcessId": 8422,
-    "ParentProcessName": "cmd.exe",
-    "FileName": "psexec64.exe",
-    "CommandLine": "psexec64 \\\\Workstation-Secure-99 -u CORP\\svc-deploy -p P@ssw0rd123! cmd.exe /c \"net user guest /active:yes\"",
-    "SensitiveDataDetected": {
-      "Type": "Password",
-      "Value": "P@ssw0rd123!"
-    }
-  }
-}`)
-
-	// Use the new String Walker to shield the engine from JSON formatting
-	out := redactor.RedactAllJSONStrings(testInput, root)
-	//out := redactor.RedactBytes(testInput, root)
-	fmt.Printf("Result:\n%s\n", out)
-
-	tests := [][]byte{
-		[]byte(`psexec64 -u alice -p P@ssw0rd123! cmd.exe`),
-		[]byte(`psexec64 \\server -u alice -p P@ssw0rd123! cmd.exe`),
-		[]byte(`psexec64 \\\\server -u alice -p P@ssw0rd123! cmd.exe`),
-		[]byte(`psexec64 \\\\server -u CORP\\alice -p P@ssw0rd123! cmd.exe`),
-		[]byte(`psexec64 \\\\server -u CORP\\alice -p P@ssw0rd123! cmd.exe /c "net user"`),
-	}
-	for _, t := range tests {
-		out := redactor.RedactBytes(t, root)
-		fmt.Printf("IN:  %s\nOUT: %s\n\n", t, out)
+	if err := redactor.ProcessStream(os.Stdin, os.Stdout, root, *jsonMode, *workers); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		os.Exit(1)
 	}
 }
