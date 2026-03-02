@@ -9,12 +9,11 @@ import (
 	"path/filepath"
 )
 
-// Rule represents the JSON schema.
 type Rule struct {
 	ID           string   `json:"id"`
 	Phrase       []string `json:"phrase"`
-	IsRegex      bool     `json:"isRegex"`       // FIXED: Matches windows.json
-	RedactOffset int      `json:"redact_offset"` // VERIFIED: JSON must use this exact key
+	IsRegex      bool     `json:"isRegex"`
+	RedactOffset int      `json:"redact_offset"`
 	Enabled      bool     `json:"enabled"`
 	Mask         string   `json:"mask,omitempty"`
 	MinLength    int      `json:"min_length,omitempty"`

@@ -91,7 +91,7 @@ func RedactAllJSONStrings(raw []byte, trie *Trie) []byte {
 	afterColon := false
 	lastKey := ""
 
-	for i := 0; i < len(raw); i++ {
+	for i := range raw {
 		c := raw[i]
 
 		if escaped {
@@ -105,9 +105,10 @@ func RedactAllJSONStrings(raw []byte, trie *Trie) []byte {
 		}
 
 		if !inString {
-			if c == ':' {
+			switch c {
+			case ':':
 				afterColon = true
-			} else if c == ',' || c == '{' || c == '\n' {
+			case ',', '{', '\n':
 				afterColon = false
 			}
 		}

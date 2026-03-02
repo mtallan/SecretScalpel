@@ -80,8 +80,7 @@ func ProcessStream(r io.Reader, w io.Writer, trie *Trie, isJSON bool, workers in
 		errChan <- nil
 	}()
 
-	// 4. The Block Reader (The Fix)
-	// We read lines, but pack them into a 256KB buffer before sending to a worker.
+	// 4. The Block Reader
 	reader := bufio.NewReaderSize(r, 4*1024*1024)
 	index := 0
 
