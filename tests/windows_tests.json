@@ -158,5 +158,41 @@
     "id": "neg-password-word-only",
     "input": "this is not a password command, just documentation",
     "expected": "this is not a password command, just documentation"
+  },
+  {
+    "name": "Phase0-Impacket-Exec",
+    "input": "python psexec.py CORP/svc_account:P@ssw0rd123!@10.0.0.5",
+    "expected": "python psexec.py CORP/svc_account:************@10.0.0.5"
+  },
+  {
+    "name": "Phase0-URI-Basic-Auth-Wget",
+    "input": "wget https://admin:SuperSecret!@internal-api.corp.local/config.json",
+    "expected": "wget https://admin:************@internal-api.corp.local/config.json"
+  },
+  {
+    "name": "Phase0-DB-Connection-String",
+    "input": "Server=tcp:prod.db.windows.net,1433;User ID=dbadmin;Password=ComplexP@ssw0rd!;Encrypt=True;",
+    "expected": "Server=tcp:prod.db.windows.net,1433;User ID=dbadmin;Password=****************;Encrypt=True;"
+  },
+  {
+    "name": "PowerShell-Env-Var-Assignment",
+    "input": "$env:PASSWORD = SuperSecret123",
+    "expected": "$env:PASSWORD = **************"
+  },
+  {
+    "name": "Windows-Echo-Pipe-RunAs",
+    "input": "echo P@ssw0rd123 | runas /user:DOMAIN\\admin cmd.exe",
+    "expected": "echo *********** | runas /user:DOMAIN\\admin cmd.exe"
+  },
+  {
+    "name": "Phase0-Universal-Flags-SingleQuotes",
+    "input": "mysql -u root --password='MyDatabaseSecret!'",
+    "expected": "mysql -u root --password='*****************'"
+  },
+  {
+    "name": "Phase0-Universal-Flags-Positional",
+    "input": "custom-cli.exe /p:MyP@ssword! /silent",
+    "expected": "custom-cli.exe /p:*********** /silent"
   }
+  
 ]

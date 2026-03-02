@@ -7,6 +7,33 @@
   "priority": 5,
   "enabled": true
 },
+{
+    "id": "PHASE0-IMPACKET-AUTH",
+    "phrase": ["(?i)(?:^|\\s)(?:[a-zA-Z0-9_.-]+[\\\\/])?[a-zA-Z0-9_.-]+:([^\\s:]+)@[a-zA-Z0-9_.-]+"],
+    "isRegex": true,
+    "priority": 4,
+    "enabled": true
+  },
+  {
+    "id": "PHASE0-URI-BASIC-AUTH",
+    "phrase": ["(?i)https?://[^\\s:]+:([^\\s@:]+)@[^\\s/]+"],
+    "isRegex": true,
+    "priority": 4,
+    "enabled": true
+  },
+  {
+    "id": "PHASE0-DB-CONNECTION-STRING",
+    "phrase": ["(?i)(?:Password|Pwd)\\s*=\\s*([^;\"']+)"],
+    "isRegex": true,
+    "priority": 4,
+    "enabled": true
+  },
+  {
+    "id": "WIN-ECHO-PIPE-RUNAS",
+    "phrase": ["echo", "<REDACT>", "|", "runas"],
+    "priority": 0,
+    "enabled": true
+  },
 { 
     "id": "DLP-JSON-VALUE-MEMBER", 
     "phrase": ["value:", "<REDACT>"], 

@@ -1,19 +1,16 @@
-/* scanner.go - ALWAYS INCLUDE THIS HEADER */
-
+/* scanner.go */
 package redactor
 
 import (
 	"bytes"
 	"errors"
-	"unicode/utf8"
 )
 
 var ErrEOF = errors.New("EOF")
 
-// IsGapChar strictly splits on whitespace.
-// The String Walker handles JSON brackets safely.
-func IsGapChar(r rune) bool {
-	switch r {
+// IsGapChar strictly splits on whitespace and quotes using raw bytes.
+func IsGapChar(c byte) bool {
+	switch c {
 	case ' ', '\t', '\n', '\r', '"':
 		return true
 	default:
@@ -21,19 +18,18 @@ func IsGapChar(r rune) bool {
 	}
 }
 
+// LogSplitter now runs entirely on raw bytes. No rune decoding.
 func LogSplitter(data []byte, toLower bool) (int, []byte, error) {
 	if len(data) == 0 {
 		return 0, nil, ErrEOF
 	}
 
 	start := 0
-
 	for start < len(data) {
-		r, size := utf8.DecodeRune(data[start:])
-		if !IsGapChar(r) {
+		if !IsGapChar(data[start]) {
 			break
 		}
-		start += size
+		start++
 	}
 
 	if start == len(data) {
@@ -44,34 +40,31 @@ func LogSplitter(data []byte, toLower bool) (int, []byte, error) {
 	escaped := false
 
 	for end < len(data) {
-		r, size := utf8.DecodeRune(data[end:])
+		c := data[end]
 
 		if escaped {
 			escaped = false
-			end += size
+			end++
 			continue
 		}
 
-		if r == '\\' {
+		if c == '\\' {
 			escaped = true
-			end += size
+			end++
 			continue
 		}
 
-		if IsGapChar(r) {
+		if IsGapChar(c) {
 			break
 		}
 
-		end += size
+		end++
 	}
 
 	val := data[start:end]
 	return end, val, nil
 }
 
-// RedactAllJSONStrings acts as a zero-allocation shield.
-// It finds JSON strings, removes the quotes, sends the clean text to RedactBytes,
-// and safely stitches the redacted text back into the JSON.
 func RedactAllJSONStrings(raw []byte, trie *Trie) []byte {
 	var result bytes.Buffer
 	result.Grow(len(raw))
@@ -81,7 +74,7 @@ func RedactAllJSONStrings(raw []byte, trie *Trie) []byte {
 	escaped := false
 	stringStart := 0
 
-	for i := range raw {
+	for i := 0; i < len(raw); i++ {
 		c := raw[i]
 
 		if escaped {
@@ -104,7 +97,6 @@ func RedactAllJSONStrings(raw []byte, trie *Trie) []byte {
 				strContent := raw[stringStart:i]
 
 				if len(strContent) > 0 {
-					// Send ONLY the clean text (e.g., "net use...") to the engine
 					redacted := RedactBytes(strContent, trie)
 					result.Write(redacted)
 				}

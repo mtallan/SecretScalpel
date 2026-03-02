@@ -1,16 +1,14 @@
-/*engine.go - ALWAYS INCLUDE THIS HEADER*/
-
 package redactor
 
 import (
 	"bytes"
-	"fmt"
 	"sort"
-	"strings"
+	"sync"
 )
 
+var globalStars = bytes.Repeat([]byte("*"), 2048)
+
 type Token struct {
-	Word  string
 	Start int
 	End   int
 }
@@ -29,151 +27,191 @@ type pendingRedaction struct {
 	targets    []RedactionTarget
 }
 
+type interval struct{ start, end int }
+
+type finalInt struct {
+	start int
+	end   int
+	maskB []byte
+	maskS string
+}
+
+// EngineWorkspace holds all the reusable slices and buffers for a single redaction pass.
+type EngineWorkspace struct {
+	toRedact []pendingRedaction
+	claimed  []interval
+	resolved []finalInt
+	outBuf   bytes.Buffer
+}
+
+// workspacePool allows 24 concurrent workers to recycle memory instead of allocating.
+var workspacePool = sync.Pool{
+	New: func() any {
+		return &EngineWorkspace{
+			toRedact: make([]pendingRedaction, 0, 64),
+			claimed:  make([]interval, 0, 64),
+			resolved: make([]finalInt, 0, 64),
+		}
+	},
+}
+
 func RedactBytes(raw []byte, trie *Trie) []byte {
 	if trie == nil || trie.Root == nil || len(raw) == 0 {
 		return raw
 	}
 
-	var toRedact []pendingRedaction
-
 	// =========================================================
-	// PHASE 0: Global Regex Scanning (Capture Group Aware)
+	// PHASE 0: Global Regex Scanning (Fast-Path Guarded)
 	// =========================================================
-	// PHASE 0: Global Regex Scanning
-	for _, rr := range trie.RegexRules {
-		matches := rr.Re.FindAllSubmatchIndex(raw, -1)
-		for _, match := range matches {
-			// Start by assuming we redact the full match (Group 0)
-			start, end := match[0], match[1]
+	hasRegexTrigger := false
+	for i := 0; i < len(raw); i++ {
+		c := raw[i]
+		if c == '@' || c == '=' || c == ':' || c == '/' || c == '-' {
+			hasRegexTrigger = true
+			break
+		}
+	}
 
-			// DYNAMIC SCAN: Iterate through all capture groups (starting at Index 2 / Group 1).
-			// We keep updating start/end so that the LAST valid group in the
-			// regex is the one that gets redacted.
-			for i := 2; i < len(match); i += 2 {
-				if match[i] != -1 {
-					start = match[i]
-					end = match[i+1]
-				}
+	// Check out a recycled workspace
+	ws := workspacePool.Get().(*EngineWorkspace)
+
+	// Reset the slices without shrinking their capacity
+	ws.toRedact = ws.toRedact[:0]
+	ws.claimed = ws.claimed[:0]
+	ws.resolved = ws.resolved[:0]
+	ws.outBuf.Reset()
+
+	if hasRegexTrigger {
+		for _, rr := range trie.RegexRules {
+			if !rr.Re.Match(raw) {
+				continue
 			}
-
-			toRedact = append(toRedact, pendingRedaction{
-				matchStart: start,
-				matchEnd:   end,
-				priority:   rr.Priority,
-				targets: []RedactionTarget{{
-					start: start, end: end, mask: rr.Mask, offset: rr.Offset,
-				}},
-			})
+			matches := rr.Re.FindAllSubmatchIndex(raw, -1)
+			for _, match := range matches {
+				start, end := match[0], match[1]
+				for i := 2; i < len(match); i += 2 {
+					if match[i] != -1 {
+						start = match[i]
+						end = match[i+1]
+					}
+				}
+				ws.toRedact = append(ws.toRedact, pendingRedaction{
+					matchStart: start,
+					matchEnd:   end,
+					priority:   rr.Priority,
+					targets: []RedactionTarget{{
+						start: start, end: end, mask: rr.Mask, offset: rr.Offset,
+					}},
+				})
+			}
 		}
 	}
 
 	// =========================================================
-	// PHASE 1: Sliding Window Trie Matching
+	// PHASE 1: Tokenization & Sliding Window (Stack Allocated)
 	// =========================================================
-	var window []Token
-	windowSize := trie.MaxDepth + 1
-	currentPos, remaining := 0, raw
+	var stackTokens [256]Token
+	tokens := stackTokens[:0]
+	currentPos := 0
+	remaining := raw
 
 	for {
 		advance, val, err := LogSplitter(remaining, true)
 		if advance == 0 || err != nil {
 			break
 		}
-
 		sPos := currentPos + (advance - len(val))
 		ePos := currentPos + advance
-		window = append(window, Token{Word: strings.ToLower(string(val)), Start: sPos, End: ePos})
-		var currentWindowWords []string
-		for _, t := range window {
-			currentWindowWords = append(currentWindowWords, t.Word)
-		}
-		fmt.Printf("[TRIE DEBUG] Window: %v\n", currentWindowWords)
-		if len(window) > windowSize {
-			window = window[1:]
-		}
-
-		for i := 0; i < len(window); i++ {
-			curr := trie.Root
-			for j := i; j < len(window); j++ {
-				word := window[j].Word
-
-				// Match Logic: Literal -> Regex Edge -> Wildcard
-				next, ok := curr.Children[word]
-				if !ok {
-					for _, edge := range curr.RegexChildren {
-						if edge.Re.MatchString(word) {
-							next = edge.Node
-							ok = true
-							break
-						}
-					}
-				}
-				if !ok {
-					next, ok = curr.Children["*"]
-				}
-
-				if ok {
-					curr = next
-					if curr.Meta != nil {
-						var targets []RedactionTarget
-						for _, relIdx := range curr.Meta.RedactIndices {
-							tIdx := i + relIdx
-							if tIdx < len(window) {
-								targets = append(targets, RedactionTarget{
-									start:  window[tIdx].Start,
-									end:    window[tIdx].End,
-									mask:   curr.Meta.CustomMask,
-									offset: curr.Meta.Offset,
-								})
-							}
-						}
-						if len(targets) > 0 {
-							toRedact = append(toRedact, pendingRedaction{
-								matchStart: window[i].Start,
-								matchEnd:   window[j].End,
-								priority:   curr.Meta.Priority,
-								targets:    targets,
-							})
-						}
-					}
-				} else {
-					break
-				}
-			}
-		}
+		tokens = append(tokens, Token{Start: sPos, End: ePos})
 		currentPos += advance
 		remaining = remaining[advance:]
 	}
 
-	if len(toRedact) == 0 {
+	windowSize := trie.MaxDepth + 1
+	var scratch [256]byte
+
+	for i := 0; i < len(tokens); i++ {
+		curr := trie.Root
+		for j := i; j < len(tokens) && j < i+windowSize; j++ {
+			tok := tokens[j]
+			wordRaw := raw[tok.Start:tok.End]
+
+			n := len(wordRaw)
+			if n > 256 {
+				n = 256
+			}
+			for k := 0; k < n; k++ {
+				c := wordRaw[k]
+				if c >= 'A' && c <= 'Z' {
+					scratch[k] = c + 32
+				} else {
+					scratch[k] = c
+				}
+			}
+
+			next, ok := curr.Children[string(scratch[:n])]
+			if !ok {
+				for _, edge := range curr.RegexChildren {
+					if edge.Re.Match(wordRaw) {
+						next = edge.Node
+						ok = true
+						break
+					}
+				}
+			}
+			if !ok {
+				next, ok = curr.Children["*"]
+			}
+
+			if ok {
+				curr = next
+				if curr.Meta != nil {
+					var targets []RedactionTarget
+					for _, relIdx := range curr.Meta.RedactIndices {
+						tIdx := i + relIdx
+						if tIdx < len(tokens) {
+							targets = append(targets, RedactionTarget{
+								start:  tokens[tIdx].Start,
+								end:    tokens[tIdx].End,
+								mask:   curr.Meta.CustomMask,
+								offset: curr.Meta.Offset,
+							})
+						}
+					}
+					if len(targets) > 0 {
+						ws.toRedact = append(ws.toRedact, pendingRedaction{
+							matchStart: tokens[i].Start,
+							matchEnd:   tokens[j].End,
+							priority:   curr.Meta.Priority,
+							targets:    targets,
+						})
+					}
+				}
+			} else {
+				break
+			}
+		}
+	}
+
+	if len(ws.toRedact) == 0 {
+		workspacePool.Put(ws)
 		return raw
 	}
 
 	// =========================================================
-	// PHASE 2: Reconstruction (Priority & Global Masking)
+	// PHASE 2: Reconstruction & Overlap Protection
 	// =========================================================
-
-	// 1. Sort by Priority (Lower number = Higher Priority)
-	sort.Slice(toRedact, func(i, j int) bool {
-		if toRedact[i].priority != toRedact[j].priority {
-			return toRedact[i].priority < toRedact[j].priority
+	sort.Slice(ws.toRedact, func(i, j int) bool {
+		if ws.toRedact[i].priority != ws.toRedact[j].priority {
+			return ws.toRedact[i].priority < ws.toRedact[j].priority
 		}
-		return (toRedact[i].matchEnd - toRedact[i].matchStart) > (toRedact[j].matchEnd - toRedact[j].matchStart)
+		return (ws.toRedact[i].matchEnd - ws.toRedact[i].matchStart) > (ws.toRedact[j].matchEnd - ws.toRedact[j].matchStart)
 	})
 
-	claimed := make([]bool, len(raw))
-	type finalInt struct {
-		start int
-		end   int
-		mask  string
-	}
-	var resolved []finalInt
-
-	// 2. Claim Bytes and Resolve Masks
-	for _, r := range toRedact {
+	for _, r := range ws.toRedact {
 		overlap := false
-		for k := r.matchStart; k < r.matchEnd; k++ {
-			if claimed[k] {
+		for _, c := range ws.claimed {
+			if r.matchStart < c.end && r.matchEnd > c.start {
 				overlap = true
 				break
 			}
@@ -182,10 +220,7 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 			continue
 		}
 
-		// Lock these bytes
-		for k := r.matchStart; k < r.matchEnd; k++ {
-			claimed[k] = true
-		}
+		ws.claimed = append(ws.claimed, interval{r.matchStart, r.matchEnd})
 
 		for _, t := range r.targets {
 			actualStart := t.start + t.offset
@@ -193,57 +228,64 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 				continue
 			}
 
-			// --- THE GLOBAL MASK FIX ---
 			maskStr := t.mask
 			if maskStr == "" {
-				// Use the Global Default set in main.go (e.g. "REDACTED")
 				maskStr = trie.GlobalMask
 			}
 
-			// If the mask is explicitly "*", generate length-matched stars
 			if maskStr == "*" {
 				maskLen := t.end - actualStart
 				if maskLen < 0 {
 					maskLen = 0
 				}
-				maskStr = string(bytes.Repeat([]byte("*"), maskLen))
+				if maskLen > len(globalStars) {
+					maskLen = len(globalStars)
+				}
+				ws.resolved = append(ws.resolved, finalInt{start: actualStart, end: t.end, maskB: globalStars[:maskLen]})
+			} else {
+				ws.resolved = append(ws.resolved, finalInt{start: actualStart, end: t.end, maskS: maskStr})
 			}
-			// ---------------------------
-
-			resolved = append(resolved, finalInt{start: actualStart, end: t.end, mask: maskStr})
 		}
 	}
 
-	// 3. Sequential Write
-	sort.Slice(resolved, func(i, j int) bool {
-		return resolved[i].start < resolved[j].start
+	sort.Slice(ws.resolved, func(i, j int) bool {
+		return ws.resolved[i].start < ws.resolved[j].start
 	})
 
 	var filtered []finalInt
-	if len(resolved) > 0 {
-		filtered = append(filtered, resolved[0])
-		for i := 1; i < len(resolved); i++ {
+	if len(ws.resolved) > 0 {
+		filtered = append(filtered, ws.resolved[0])
+		for i := 1; i < len(ws.resolved); i++ {
 			last := &filtered[len(filtered)-1]
-			if resolved[i].start < last.end {
+			if ws.resolved[i].start < last.end {
 				continue
 			}
-			filtered = append(filtered, resolved[i])
+			filtered = append(filtered, ws.resolved[i])
 		}
 	}
 
-	var result bytes.Buffer
-	result.Grow(len(raw))
+	ws.outBuf.Grow(len(raw))
 	writePos := 0
-	for _, interval := range filtered {
-		if writePos < interval.start {
-			result.Write(raw[writePos:interval.start])
+	for _, inv := range filtered {
+		if writePos < inv.start {
+			ws.outBuf.Write(raw[writePos:inv.start])
 		}
-		result.WriteString(interval.mask)
-		writePos = interval.end
+		if inv.maskB != nil {
+			ws.outBuf.Write(inv.maskB)
+		} else {
+			ws.outBuf.WriteString(inv.maskS)
+		}
+		writePos = inv.end
 	}
 	if writePos < len(raw) {
-		result.Write(raw[writePos:])
+		ws.outBuf.Write(raw[writePos:])
 	}
 
-	return result.Bytes()
+	// We MUST copy the bytes before putting the workspace back in the pool
+	// otherwise the next thread will overwrite our output!
+	finalBytes := make([]byte, ws.outBuf.Len())
+	copy(finalBytes, ws.outBuf.Bytes())
+
+	workspacePool.Put(ws)
+	return finalBytes
 }

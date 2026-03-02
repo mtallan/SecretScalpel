@@ -2,76 +2,127 @@ package redactor
 
 import (
 	"bufio"
-	"os"
+	"bytes"
+	"io"
+	"runtime"
 	"sync"
 )
 
 type Job struct {
-	ID   int
-	Data []byte
+	Index int
+	Data  []byte
 }
 
 type Result struct {
-	ID   int
-	Data []byte
+	Index int
+	Data  []byte
 }
 
-// Changed root *TrieNode to trie *Trie
-func RunParallel(trie *Trie, workerCount int) {
-	jobs := make(chan Job, workerCount*2)
-	results := make(chan Result, workerCount*2)
+// ProcessStream batches log lines into chunks to eliminate channel contention
+// and maximize CPU throughput across all cores.
+func ProcessStream(r io.Reader, w io.Writer, trie *Trie, isJSON bool, workers int) error {
+	if workers <= 0 {
+		workers = runtime.NumCPU()
+	}
+
+	jobs := make(chan Job, workers)
+	results := make(chan Result, workers)
+
 	var wg sync.WaitGroup
 
-	// Worker Pool
-	for i := 0; i < workerCount; i++ {
-		wg.Add(1) // Standard Go WaitGroup usage
+	// 1. Spin up the Worker Pool
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
 		go func() {
 			defer wg.Done()
 			for job := range jobs {
-				// Now passing the *Trie manager
-				RedactBytes(job.Data, trie)
-				results <- Result{ID: job.ID, Data: job.Data}
+				var redacted []byte
+				if isJSON {
+					redacted = RedactAllJSONStrings(job.Data, trie)
+				} else {
+					redacted = RedactBytes(job.Data, trie)
+				}
+				results <- Result{Index: job.Index, Data: redacted}
 			}
 		}()
 	}
 
-	// Ordered Sequencer (Remains mostly the same)
+	// 2. Closer Goroutine
 	go func() {
-		pending := make(map[int][]byte)
-		nextID := 0
-		newline := []byte("\n")
-		for res := range results {
-			pending[res.ID] = res.Data
-			for {
-				data, ok := pending[nextID]
-				if !ok {
-					break
-				}
-				os.Stdout.Write(data)
-				os.Stdout.Write(newline)
-				delete(pending, nextID)
-				nextID++
-			}
-		}
+		wg.Wait()
+		close(results)
 	}()
 
-	// Producer (Remains mostly the same)
-	scanner := bufio.NewScanner(os.Stdin)
-	// 1MB buffer for long log lines
-	buf := make([]byte, 1024*1024)
-	scanner.Buffer(buf, 1024*1024)
+	// 3. Order-Preserving Writer Goroutine
+	errChan := make(chan error, 1)
+	go func() {
+		expectedIndex := 0
+		buffer := make(map[int][]byte)
 
-	lineID := 0
-	for scanner.Scan() {
-		line := scanner.Bytes()
-		lineCopy := make([]byte, len(line))
-		copy(lineCopy, line)
+		for res := range results {
+			if res.Index == expectedIndex {
+				w.Write(res.Data)
+				expectedIndex++
 
-		jobs <- Job{ID: lineID, Data: lineCopy}
-		lineID++
+				for {
+					if nextData, ok := buffer[expectedIndex]; ok {
+						w.Write(nextData)
+						delete(buffer, expectedIndex)
+						expectedIndex++
+					} else {
+						break
+					}
+				}
+			} else {
+				buffer[res.Index] = res.Data
+			}
+		}
+		errChan <- nil
+	}()
+
+	// 4. The Block Reader (The Fix)
+	// We read lines, but pack them into a 256KB buffer before sending to a worker.
+	reader := bufio.NewReaderSize(r, 1024*1024)
+	index := 0
+
+	// Pre-allocate a large chunk to avoid slice growth allocations
+	chunkSize := 256 * 1024
+	var currentBatch bytes.Buffer
+	currentBatch.Grow(chunkSize + 4096)
+
+	for {
+		line, err := reader.ReadBytes('\n')
+		if len(line) > 0 {
+			currentBatch.Write(line)
+
+			// If we've hit our chunk limit, dispatch it to a core
+			if currentBatch.Len() >= chunkSize {
+				// We must copy the batch because we are resetting the buffer
+				batchCopy := make([]byte, currentBatch.Len())
+				copy(batchCopy, currentBatch.Bytes())
+
+				jobs <- Job{Index: index, Data: batchCopy}
+				index++
+				currentBatch.Reset()
+			}
+		}
+		if err != nil {
+			if err != io.EOF {
+				return err
+			}
+			break
+		}
+	}
+
+	// Dispatch the final partial chunk
+	if currentBatch.Len() > 0 {
+		batchCopy := make([]byte, currentBatch.Len())
+		copy(batchCopy, currentBatch.Bytes())
+		jobs <- Job{Index: index, Data: batchCopy}
 	}
 
 	close(jobs)
-	wg.Wait()
-	close(results)
+
+	<-errChan
+	return nil
 }
