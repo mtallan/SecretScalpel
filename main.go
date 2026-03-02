@@ -32,7 +32,7 @@ func main() {
 }`)
 
 	// Use the new String Walker to shield the engine from JSON formatting
-	//out := redactor.RedactAllJSONStrings(testInput, root)
-	out := redactor.RedactBytes(testInput, root)
+	out := redactor.RedactAllJSONStrings(testInput, root)
+	//out := redactor.RedactBytes(testInput, root)
 	fmt.Printf("Result:\n%s\n", out)
 }

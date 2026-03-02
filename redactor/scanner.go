@@ -1,3 +1,5 @@
+/* scanner.go - ALWAYS INCLUDE THIS HEADER */
+
 package redactor
 
 import (
