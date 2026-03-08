@@ -28,7 +28,7 @@ echo '{"cmd": "net use Z: \\server P@ssword domain"}' | go run . -json
 
 ## Architecture
 
-RedactBox is a log sanitization engine. Input flows through `ProcessStream` (orchestrator) → worker pool → per-line redaction.
+SecretScaple is a log sanitization engine. Input flows through `ProcessStream` (orchestrator) → worker pool → per-line redaction.
 
 **Redaction pipeline (per line/chunk):**
 1. **Phase 0** (`engine.go:RedactBytes`) — Regex rules run when trigger chars (`@`, `=`, `:`, `/`, `-`) are present. These handle patterns like URL basic auth and DB connection strings.

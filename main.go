@@ -7,7 +7,7 @@ import (
 	"os"
 	"runtime"
 
-	"redactbox/redactor"
+	"secretscaple/redactor"
 )
 
 const Version = "v0.1.0"
@@ -23,11 +23,11 @@ func main() {
 	flag.Parse()
 
 	if *versionFlag {
-		fmt.Println("redactbox", Version)
+		fmt.Println("secretscaple", Version)
 		os.Exit(0)
 	}
 
-	root := redactor.NewTrie(*mask)
+	root := redactor.NewTrie(*mask, 0, 0)
 	if err := redactor.LoadRulesFromDir(*rulesDir, root); err != nil {
 		if *failOpen {
 			fmt.Fprintf(os.Stderr, "WARNING: failed to load rules, passing through unredacted: %v\n", err)
@@ -53,7 +53,7 @@ func main() {
 	if err := redactor.ProcessStream(os.Stdin, os.Stdout, root, *jsonMode, *workers); err != nil {
 		if *failOpen {
 			fmt.Fprintf(os.Stderr, "WARNING: processing error, passing through unredacted: %v\n", err)
-			fmt.Fprintf(os.Stdout, `{"redactbox_warning":"REDACTION_FAILED_UNREDACTED_PAYLOAD_FOLLOWS"}`+"\n")
+			fmt.Fprintf(os.Stdout, `{"secretscaple_warning":"REDACTION_FAILED_UNREDACTED_PAYLOAD_FOLLOWS"}`+"\n")
 			io.Copy(os.Stdout, os.Stdin)
 			return
 		}

@@ -1,4 +1,4 @@
-# RedactBox
+# SecretScaple
 
 A semantic log sanitization engine for security teams. Built to strip credentials from Windows alert data before it reaches your SOAR, your case comments, and your customers.
 
@@ -8,11 +8,11 @@ Windows alerts are full of credentials. `psexec` commands, `net use` strings, da
 
 Most teams handle this with regex. Regex doesn't understand context. It doesn't know that `-p` means password in `psexec` but not in `grep`. It fires on things it shouldn't and misses things it should catch.
 
-RedactBox uses a token-aware rule engine that understands command structure. It knows that in `net use Z: \\server P@ssw0rd domain` the fourth token is a credential — not because it matched a pattern on the word "password", but because it understands the structure of a Windows `net use` command.
+SecretScaple uses a token-aware rule engine that understands command structure. It knows that in `net use Z: \\server P@ssw0rd domain` the fourth token is a credential — not because it matched a pattern on the word "password", but because it understands the structure of a Windows `net use` command.
 
 ## How It Works
 
-RedactBox tokenizes each log line and walks a rule trie. Rules match on sequences of tokens, not raw strings. A rule like:
+SecretScaple tokenizes each log line and walks a rule trie. Rules match on sequences of tokens, not raw strings. A rule like:
 
 ```json
 { "id": "WIN-PSEXEC", "phrase": ["psexec", "-u", "<any>", "-p", "<REDACT>"] }
@@ -79,7 +79,7 @@ Rules are auditable, git-diffable, and reviewable by anyone on your team without
 
 ## Included Rules
 
-RedactBox ships with rules for common Windows credential exposure patterns:
+SecretScaple ships with rules for common Windows credential exposure patterns:
 
 - `net use` — UNC path authentication
 - `psexec` — both attached (`-pPassword`) and separated (`-p Password`) forms
@@ -99,7 +99,7 @@ RedactBox ships with rules for common Windows credential exposure patterns:
 ### As a library
 
 ```go
-import "redactbox/redactor"
+import "secretscaple/redactor"
 
 trie := redactor.NewTrie("*", 0, 0)
 redactor.LoadRulesFromDir("./rules", trie)
@@ -116,14 +116,14 @@ err := redactor.ProcessStream(reader, writer, trie, isJSON, 0) // 0 = NumCPU
 
 ### JSON vs Raw mode
 
-RedactBox has two processing modes:
+SecretScaple has two processing modes:
 
 - **Raw mode** (`RedactBytes`) — processes the entire input as a flat byte stream. Use for plaintext logs, syslog, CEF format.
 - **JSON mode** (`RedactAllJSONStrings`) — walks JSON string values only, leaving keys and structure intact. Use for structured JSON logs (Elastic, Splunk JSON, etc.). Output remains valid, parseable JSON.
 
 ## Limitations
 
-**RedactBox is a sanitization tool, not a DLP system.** It does not:
+**SecretScaple is a sanitization tool, not a DLP system.** It does not:
 - Detect all possible credential formats — only patterns covered by loaded rules
 - Guarantee zero false negatives — novel credential formats without rules will pass through
 - Replace network-level DLP or CASB tooling
