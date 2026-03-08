@@ -1,0 +1,22 @@
+[
+  {
+    "id": "3P-PLINK-PW-FLAG",
+    "input": "plink.exe -ssh user@host -pw MySshPassword",
+    "expected": "plink.exe -ssh user@host -pw *************"
+  },
+  {
+    "id": "3P-CURL-U",
+    "input": "curl -u user:password http://example.com",
+    "expected": "curl -u ************* http://example.com"
+  },
+  {
+    "id": "3P-CURL-USER",
+    "input": "curl.exe --user admin:MySecret https://api.example.com",
+    "expected": "curl.exe --user ************** https://api.example.com"
+  },
+  {
+    "id": "3P-GIT-AUTH-CLONE",
+    "input": "git clone https://user:MyP@ssw0rd!@github.com/user/repo.git",
+    "expected": "git clone https://user:***********@github.com/user/repo.git"
+  }
+]

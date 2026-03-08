@@ -180,30 +180,6 @@
     "min_length": 4
   },
   {
-    "id": "LNX-CURL-U",
-    "phrase": [
-      "curl",
-      "-u",
-      "<redact:.*:.*>"
-    ],
-    "redact_offset": 0,
-    "priority": 1,
-    "enabled": true,
-    "min_length": 3
-  },
-  {
-    "id": "LNX-CURL-USER",
-    "phrase": [
-      "curl",
-      "--user",
-      "<redact:.*:.*>"
-    ],
-    "redact_offset": 0,
-    "priority": 1,
-    "enabled": true,
-    "min_length": 3
-  },
-  {
     "id": "LNX-WGET-PASSWORD",
     "phrase": [
       "wget",
@@ -252,12 +228,7 @@
   {
     "id": "LNX-OPENSSL-PASS",
     "comment": "pass:secret is a single token. '<redact:^pass:.+>' matches it; redact_after trims the 'pass:' prefix so only the secret is starred.",
-    "phrase": [
-      "openssl",
-      "<any>",
-      "-passin",
-      "<redact:^pass:.+>"
-    ],
+    "phrase": ["-passin", "<redact:^pass:.+>"],
     "redact_after": "pass:",
     "priority": 1,
     "enabled": true,
@@ -266,12 +237,7 @@
   {
     "id": "LNX-OPENSSL-PASSOUT",
     "comment": "Same as LNX-OPENSSL-PASS but for -passout.",
-    "phrase": [
-      "openssl",
-      "<any>",
-      "-passout",
-      "<redact:^pass:.+>"
-    ],
+    "phrase": ["-passout", "<redact:^pass:.+>"],
     "redact_after": "pass:",
     "priority": 1,
     "enabled": true,

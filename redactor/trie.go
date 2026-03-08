@@ -1,18 +1,20 @@
 package redactor
 
 import (
-	"fmt"
+	"log/slog"
 	"regexp"
 	"strings"
 )
 
 type RegexRule struct {
-	ID          string
-	Re          *regexp.Regexp
-	Mask        string
-	Offset      int
-	RedactAfter string
-	Priority    int
+	ID               string
+	Re               *regexp.Regexp
+	Mask             string
+	RedactAfter      string
+	RedactAfterBytes []byte
+	Priority         int
+	MinLength        int
+	MaxLength        int
 }
 
 type RegexEdge struct {
@@ -21,18 +23,25 @@ type RegexEdge struct {
 }
 
 type RuleMeta struct {
-	ID            string
-	RedactIndices []int
-	CustomMask    string
-	Offset        int
-	RedactAfter   string
-	Priority      int
+	ID               string
+	RedactIndices    []int
+	CustomMask       string
+	RedactAfter      string
+	RedactAfterBytes []byte
+	Priority         int
+	MinLength        int
+	MaxLength        int
 }
 
 type TrieNode struct {
 	Children      map[string]*TrieNode
 	RegexChildren []RegexEdge
 	Meta          *RuleMeta
+}
+
+type JSONKeyTrieNode struct {
+	Children map[byte]*JSONKeyTrieNode
+	IsEnd    bool
 }
 
 var placeholderRegex = regexp.MustCompile(`(?i)^<(redact|any):(.+)>$`)
@@ -42,14 +51,14 @@ type Trie struct {
 	MaxDepth          int
 	GlobalMask        string
 	RegexRules        []*RegexRule
-	JSONSensitiveKeys map[string]bool
+	JSONSensitiveKeys *JSONKeyTrieNode
 }
 
 func NewTrie(mask string, min int, max int) *Trie {
 	return &Trie{
 		Root:              &TrieNode{Children: make(map[string]*TrieNode)},
 		GlobalMask:        mask,
-		JSONSensitiveKeys: make(map[string]bool),
+		JSONSensitiveKeys: &JSONKeyTrieNode{Children: make(map[byte]*JSONKeyTrieNode)},
 	}
 }
 
@@ -57,25 +66,35 @@ func NewTrie(mask string, min int, max int) *Trie {
 // fully redacted, regardless of content. Keys are stored lowercased so
 // matching in RedactAllJSONStrings remains case-insensitive.
 func (t *Trie) AddJSONKeyRule(key string) {
-	t.JSONSensitiveKeys[strings.ToLower(key)] = true
+	curr := t.JSONSensitiveKeys
+	lowerKey := strings.ToLower(key)
+	for i := 0; i < len(lowerKey); i++ {
+		b := lowerKey[i]
+		if _, ok := curr.Children[b]; !ok {
+			curr.Children[b] = &JSONKeyTrieNode{Children: make(map[byte]*JSONKeyTrieNode)}
+		}
+		curr = curr.Children[b]
+	}
+	curr.IsEnd = true
 }
 
 func (t *Trie) IsEmpty() bool {
 	return len(t.Root.Children) == 0 && len(t.Root.RegexChildren) == 0 && len(t.RegexRules) == 0
 }
 
-func (t *Trie) AddRegexRule(id, pattern, mask string, offset int, redactAfter string, priority int) {
+func (t *Trie) AddRegexRule(id, pattern, mask string, min, max int, redactAfter string, priority int) {
 	re, err := regexp.Compile(pattern)
 	if err != nil {
-		fmt.Printf("Invalid regex: %v\n", err)
+		slog.Error("Invalid regex in rule", "rule_id", id, "pattern", pattern, "error", err)
 		return
 	}
 	t.RegexRules = append(t.RegexRules, &RegexRule{
-		ID: id, Re: re, Mask: mask, Offset: offset, RedactAfter: redactAfter, Priority: priority,
+		ID: id, Re: re, Mask: mask, RedactAfter: redactAfter, RedactAfterBytes: []byte(redactAfter), Priority: priority,
+		MinLength: min, MaxLength: max,
 	})
 }
 
-func (t *Trie) AddRule(id string, phrase []string, mask string, min int, max int, offset int, redactAfter string, priority int) {
+func (t *Trie) AddRule(id string, phrase []string, mask string, min, max int, redactAfter string, priority int) {
 	if len(phrase) == 0 {
 		return
 	}
@@ -132,7 +151,8 @@ func (t *Trie) AddRule(id string, phrase []string, mask string, min int, max int
 
 	curr.Meta = &RuleMeta{
 		ID: id, RedactIndices: redactIndices, CustomMask: mask,
-		Offset: offset, RedactAfter: redactAfter, Priority: priority,
+		RedactAfter: redactAfter, RedactAfterBytes: []byte(redactAfter), Priority: priority,
+		MinLength: min, MaxLength: max,
 	}
 	if len(phrase) > t.MaxDepth {
 		t.MaxDepth = len(phrase)

@@ -1,0 +1,51 @@
+[
+  {
+    "id": "3P-PLINK-PW",
+    "comment": "Matches PuTTY Link (plink) with a -pw flag. Uses the trie with a wildcard to handle variable arguments.",
+    "phrase": [
+      "<any:^plink(\\.exe)?$>",
+      "<any>",
+      "<any>",
+      "-pw",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "3P-CURL-U",
+    "comment": "Matches curl basic auth credentials with -u flag.",
+    "phrase": [
+      "<any:^curl(\\.exe)?$>",
+      "-u",
+      "<redact:.*:.*>"
+    ],
+    "priority": 2,
+    "enabled": true,
+    "min_length": 3
+  },
+  {
+    "id": "3P-CURL-USER",
+    "comment": "Matches curl basic auth credentials with --user flag.",
+    "phrase": [
+      "<any:^curl(\\.exe)?$>",
+      "--user",
+      "<redact:.*:.*>"
+    ],
+    "priority": 2,
+    "enabled": true,
+    "min_length": 3
+  },
+  {
+    "id": "3P-GIT-AUTH",
+    "comment": "Matches git clone URLs with embedded credentials. Regex is required here to redact a substring within a single token.",
+    "phrase": [
+      "(?i)git\\\\s+clone\\\\s+https?://(?:.+?):(.+)@"
+    ],
+    "isRegex": true,
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  }
+]

@@ -4,7 +4,6 @@ package redactor
 import (
 	"bytes"
 	"errors"
-	"strings"
 	"sync"
 )
 
@@ -35,7 +34,7 @@ func IsGapChar(c byte) bool {
 }
 
 // LogSplitter now runs entirely on raw bytes. No rune decoding.
-func LogSplitter(data []byte, toLower bool) (int, []byte, error) {
+func LogSplitter(data []byte) (int, []byte, error) {
 	if len(data) == 0 {
 		return 0, nil, ErrEOF
 	}
@@ -64,22 +63,40 @@ func LogSplitter(data []byte, toLower bool) (int, []byte, error) {
 	return end, val, nil
 }
 
-func RedactAllJSONStrings(raw []byte, trie *Trie) []byte {
+func isSensitiveKey(key []byte, keyTrie *JSONKeyTrieNode) bool {
+	curr := keyTrie
+	for _, b := range key {
+		c := b
+		if 'A' <= c && c <= 'Z' {
+			c += ('a' - 'A')
+		}
+
+		next, ok := curr.Children[c]
+		if !ok {
+			return false
+		}
+		curr = next
+	}
+	return curr.IsEnd
+}
+
+// RedactAllJSONStringsToBuffer performs JSON-aware redaction and returns the
+// *bytes.Buffer from the pool containing the result. The caller is responsible
+// for returning the buffer to the jsonBufPool.
+func RedactAllJSONStringsToBuffer(raw []byte, trie *Trie) *bytes.Buffer {
 	result := jsonBufPool.Get().(*bytes.Buffer)
 	result.Reset()
 	if result.Cap() < len(raw) {
 		result.Grow(len(raw))
 	}
-	// NOTE: No defer here. We must copy result.Bytes() into a fresh allocation
-	// before returning the buffer to the pool, otherwise a concurrent caller
-	// can claim this buffer and overwrite the memory the caller is still reading.
 
-	cursor := 0
 	inString := false
 	escaped := false
 	stringStart := 0
 	afterColon := false
-	lastKey := ""
+	isLastKeySensitive := false
+	arrayLevel := 0
+	cursor := 0
 
 	for i := range raw {
 		c := raw[i]
@@ -98,8 +115,18 @@ func RedactAllJSONStrings(raw []byte, trie *Trie) []byte {
 			switch c {
 			case ':':
 				afterColon = true
-			case ',', '{', '\n':
+			case ',':
+				if arrayLevel == 0 {
+					afterColon = false
+				}
+			case '{':
 				afterColon = false
+			case '[':
+				arrayLevel++
+			case ']':
+				if arrayLevel > 0 {
+					arrayLevel--
+				}
 			}
 		}
 
@@ -114,33 +141,21 @@ func RedactAllJSONStrings(raw []byte, trie *Trie) []byte {
 
 				if !afterColon {
 					// this is a key
-					lastKey = strings.ToLower(string(strContent))
+					isLastKeySensitive = isSensitiveKey(strContent, trie.JSONSensitiveKeys)
 					result.Write(strContent)
 				} else {
 					// this is a value
 					if len(strContent) > 0 {
-						if trie.JSONSensitiveKeys[lastKey] {
-							// always redact sensitive key values
+						if isLastKeySensitive {
+							// always redact sensitive key values, regardless of content
 							for range strContent {
 								result.WriteByte('*')
 							}
 						} else {
-							hasTrigger := false
-							for _, c := range strContent {
-								if c == '@' || c == '=' || c == '/' || c == '-' || c == ' ' || c == '\t' {
-									hasTrigger = true
-									break
-								}
-							}
-							if hasTrigger {
-								redacted := RedactBytes(strContent, trie)
-								result.Write(redacted)
-							} else {
-								result.Write(strContent)
-							}
+							RedactBytesToWriter(result, strContent, trie)
 						}
 					}
-					lastKey = ""
+					isLastKeySensitive = false
 				}
 
 				result.WriteByte('"')
@@ -153,9 +168,16 @@ func RedactAllJSONStrings(raw []byte, trie *Trie) []byte {
 		result.Write(raw[cursor:])
 	}
 
+	return result
+}
+
+// RedactAllJSONStrings is a convenience wrapper around RedactAllJSONStringsToBuffer.
+// It performs the redaction and returns a new byte slice, handling buffer pooling internally.
+func RedactAllJSONStrings(raw []byte, trie *Trie) []byte {
+	buf := RedactAllJSONStringsToBuffer(raw, trie)
 	// Copy before returning the buffer to the pool — mirrors the pattern in engine.go.
-	finalBytes := make([]byte, result.Len())
-	copy(finalBytes, result.Bytes())
-	jsonBufPool.Put(result)
+	finalBytes := make([]byte, buf.Len())
+	copy(finalBytes, buf.Bytes())
+	jsonBufPool.Put(buf)
 	return finalBytes
 }

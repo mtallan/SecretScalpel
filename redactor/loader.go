@@ -10,17 +10,16 @@ import (
 )
 
 type Rule struct {
-	ID           string   `json:"id"`
-	Type         string   `json:"type,omitempty"` // "json_key" marks a JSON key sentinel
-	Phrase       []string `json:"phrase"`
-	IsRegex      bool     `json:"isRegex"`
-	RedactOffset int      `json:"redact_offset"`          // Deprecated: use redact_after instead
-	RedactAfter  string   `json:"redact_after,omitempty"` // Literal prefix to skip before masking e.g. "-p" or "/pass:"
-	Enabled      bool     `json:"enabled"`
-	Mask         string   `json:"mask,omitempty"`
-	MinLength    int      `json:"min_length,omitempty"`
-	MaxLength    int      `json:"max_length,omitempty"`
-	Priority     int      `json:"priority"`
+	ID          string   `json:"id"`
+	Type        string   `json:"type,omitempty"` // "json_key" marks a JSON key sentinel
+	Phrase      []string `json:"phrase"`
+	IsRegex     bool     `json:"isRegex"`
+	RedactAfter string   `json:"redact_after,omitempty"` // Literal prefix to skip before masking e.g. "-p" or "/pass:"
+	Enabled     bool     `json:"enabled"`
+	Mask        string   `json:"mask,omitempty"`
+	MinLength   int      `json:"min_length,omitempty"`
+	MaxLength   int      `json:"max_length,omitempty"`
+	Priority    int      `json:"priority"`
 }
 
 func LoadRulesFromDir(dir string, t *Trie) error {
@@ -54,9 +53,9 @@ func LoadRulesFromDir(dir string, t *Trie) error {
 						t.AddJSONKeyRule(key)
 					}
 				case r.IsRegex && len(r.Phrase) > 0:
-					t.AddRegexRule(r.ID, r.Phrase[0], r.Mask, r.RedactOffset, r.RedactAfter, r.Priority)
+					t.AddRegexRule(r.ID, r.Phrase[0], r.Mask, r.MinLength, r.MaxLength, r.RedactAfter, r.Priority)
 				default:
-					t.AddRule(r.ID, r.Phrase, r.Mask, r.MinLength, r.MaxLength, r.RedactOffset, r.RedactAfter, r.Priority)
+					t.AddRule(r.ID, r.Phrase, r.Mask, r.MinLength, r.MaxLength, r.RedactAfter, r.Priority)
 				}
 			}
 		}

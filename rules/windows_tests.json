@@ -155,37 +155,37 @@
     "expected": "this is not a password command, just documentation"
   },
   {
-    "id": "PHASE0-IMPACKET-EXEC",
+    "name": "Phase0-Impacket-Exec",
     "input": "python psexec.py CORP/svc_account:P@ssw0rd123!@10.0.0.5",
     "expected": "python psexec.py CORP/svc_account:************@10.0.0.5"
   },
   {
-    "id": "PHASE0-URI-BASIC-AUTH-WGET",
+    "name": "Phase0-URI-Basic-Auth-Wget",
     "input": "wget https://admin:SuperSecret!@internal-api.corp.local/config.json",
     "expected": "wget https://admin:************@internal-api.corp.local/config.json"
   },
   {
-    "id": "PHASE0-DB-CONNECTION-STRING",
+    "name": "Phase0-DB-Connection-String",
     "input": "Server=tcp:prod.db.windows.net,1433;User ID=dbadmin;Password=ComplexP@ssw0rd!;Encrypt=True;",
     "expected": "Server=tcp:prod.db.windows.net,1433;User ID=dbadmin;Password=****************;Encrypt=True;"
   },
   {
-    "id": "PS-ENV-VAR-ASSIGNMENT",
+    "name": "PowerShell-Env-Var-Assignment",
     "input": "$env:PASSWORD = SuperSecret123",
     "expected": "$env:PASSWORD = **************"
   },
   {
-    "id": "WINDOWS-ECHO-PIPE-RUNAS",
+    "name": "Windows-Echo-Pipe-RunAs",
     "input": "echo P@ssw0rd123 | runas /user:DOMAIN\\admin cmd.exe",
     "expected": "echo *********** | runas /user:DOMAIN\\admin cmd.exe"
   },
   {
-    "id": "PHASE0-UNIVERSAL-FLAGS-SINGLEQUOTES",
+    "name": "Phase0-Universal-Flags-SingleQuotes",
     "input": "mysql -u root --password='MyDatabaseSecret!'",
     "expected": "mysql -u root --password='*****************'"
   },
   {
-    "id": "PHASE0-UNIVERSAL-FLAGS-POSITIONAL",
+    "name": "Phase0-Universal-Flags-Positional",
     "input": "custom-cli.exe /p:MyP@ssword! /silent",
     "expected": "custom-cli.exe /p:*********** /silent"
   },
@@ -313,5 +313,15 @@
     "id": "WIN-NEG-PROSE-NET-USER-ADD",
     "input": "The net user command can /add a new user.",
     "expected": "The net user command can /add a new user."
+  },
+  {
+    "id": "PS-DIRECTORY-ENTRY-PLAINTEXT",
+    "input": "$de = New-Object System.DirectoryServices.DirectoryEntry($path, $user, 'MyP@ss!')",
+    "expected": "$de = New-Object System.DirectoryServices.DirectoryEntry($path, $user, '********')"
+  },
+  {
+    "id": "WIN-WINRS-SEPARATED-PASSWORD",
+    "input": "winrs.exe -r:server -u admin -p MyP@ss! \"dir C:\\\"",
+    "expected": "winrs.exe -r:server -u admin -p ******* \"dir C:\\\""
   }
 ]

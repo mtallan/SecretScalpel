@@ -1,0 +1,28 @@
+[
+  {
+    "id": "CLOUD-AWS-CONFIGURE-SET-KEY-ID",
+    "phrase": ["aws", "configure", "set", "aws_access_key_id", "<REDACT>"],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 16
+  },
+  {
+    "id": "CLOUD-AWS-CONFIGURE-SET-SECRET-KEY",
+    "phrase": ["aws", "configure", "set", "aws_secret_access_key", "<REDACT>"],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 16
+  }
+,
+  {
+    "id": "CLOUD-GCLOUD-SQL-SET-PASSWORD",
+    "comment": "Matches gcloud command for setting a SQL user password.",
+    "phrase": [
+      "(?i)gcloud\\\\s+sql\\\\s+users\\\\s+set-password(?:.*?)(?:--password(?:=|\\\\s+)([^'\"\\\\s]+))"
+    ],
+    "isRegex": true,
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  }
+]

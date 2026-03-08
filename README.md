@@ -28,12 +28,12 @@ Benchmarked on an i9-13900K (24 cores):
 
 | Scenario | Throughput |
 |---|---|
-| Realistic log data (1 secret per 20 lines) | **985 MB/s** |
-| Worst case (secrets on 80% of lines) | 67 MB/s |
+| Realistic JSON log data (1 secret per 20 lines) | **859 MB/s** |
+| Worst case (raw logs, secrets on ~80% of lines) | 67 MB/s |
 
-Realistic throughput translates to roughly 1.8 TB/day on a single machine. The clean-path is nearly allocation-free — lines with no secrets are returned without copying.
+Realistic throughput on a single machine translates to over **70 TB/day**. The clean-path for both raw and JSON logs is highly optimized to minimize memory allocations.
 
-Honest caveat: the worst-case benchmark uses data where almost every line contains a credential. Real production log data does not look like this. The 985 MB/s number reflects actual MSSP workloads.
+Honest caveat: the "worst-case" benchmark uses data where almost every line contains a credential. Real production log data does not look like this. The 865 MB/s number reflects actual MSSP workloads with structured JSON logs.
 
 ## Rule Format
 
@@ -62,7 +62,6 @@ Rules are plain JSON. They live in the `rules/` directory and are loaded at star
 - `<any>` — matches any token without redacting
 - `<any:pattern>` — matches tokens that match the regex pattern
 - `<redact:pattern>` — matches and redacts tokens matching the pattern
-- `redact_offset` — skip N bytes at the start of the matched token before redacting (for attached flags like `-pMyPassword`)
 
 **Regex rules** (for patterns that can't be expressed as token sequences):
 ```json
