@@ -1,0 +1,47 @@
+[
+  {
+    "id": "MAC-SECURITY-INTERNET-PASS-FULL",
+    "input": "security add internet password -s api.example.com -a admin -P 443 -r htps -w MySecret",
+    "expected": "security add internet password -s api.example.com -a admin -P 443 -r htps -w ********"
+  },
+  {
+    "id": "MAC-SECURITY-PASS-SHORT",
+    "input": "security add internet password -w MySecret",
+    "expected": "security add internet password -w ********"
+  },
+  {
+    "id": "MAC-SECURITY-GENERIC-FIND",
+    "input": "security find internet password -w MySecret",
+    "expected": "security find internet password -w ********"
+  },
+  {
+    "id": "MAC-SECURITY-GENERIC-DELETE",
+    "input": "security delete generic password -w MySecret",
+    "expected": "security delete generic password -w ********"
+  },
+  {
+    "id": "MAC-SECURITY-ADD-GENERIC",
+    "input": "security add-generic-password -a myaccount -s myservice -w MySecret",
+    "expected": "security add-generic-password -a myaccount -s myservice -w ********"
+  },
+  {
+    "id": "MAC-SECURITY-NEGATIVE-NO-W",
+    "input": "security find internet password -s api.example.com",
+    "expected": "security find internet password -s api.example.com"
+  },
+  {
+    "id": "MAC-SECURITY-NEGATIVE-UNRELATED",
+    "input": "security list keychains",
+    "expected": "security list keychains"
+  },
+  {
+    "id": "MAC-SECURITY-NEGATIVE-W-NOT-PASSWORD-CONTEXT",
+    "input": "security audit log -w warning myapp",
+    "expected": "security audit log -w warning myapp"
+  },
+  {
+    "id": "MAC-SECURITY-NEGATIVE-W-POLICY-CONTEXT",
+    "input": "check security policy -w high severity",
+    "expected": "check security policy -w high severity"
+  }
+]

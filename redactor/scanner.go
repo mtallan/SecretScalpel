@@ -15,18 +15,6 @@ const (
 	stateValue
 )
 
-// Keys whose values should always be redacted
-var sensitiveKeys = map[string]bool{
-	"value":      true,
-	"password":   true,
-	"secret":     true,
-	"pwd":        true,
-	"credential": true,
-	"token":      true,
-	"apikey":     true,
-	"api_key":    true,
-}
-
 var ErrEOF = errors.New("EOF")
 var jsonBufPool = sync.Pool{
 	New: func() any {
@@ -82,7 +70,9 @@ func RedactAllJSONStrings(raw []byte, trie *Trie) []byte {
 	if result.Cap() < len(raw) {
 		result.Grow(len(raw))
 	}
-	defer jsonBufPool.Put(result)
+	// NOTE: No defer here. We must copy result.Bytes() into a fresh allocation
+	// before returning the buffer to the pool, otherwise a concurrent caller
+	// can claim this buffer and overwrite the memory the caller is still reading.
 
 	cursor := 0
 	inString := false
@@ -129,7 +119,7 @@ func RedactAllJSONStrings(raw []byte, trie *Trie) []byte {
 				} else {
 					// this is a value
 					if len(strContent) > 0 {
-						if sensitiveKeys[lastKey] {
+						if trie.JSONSensitiveKeys[lastKey] {
 							// always redact sensitive key values
 							for range strContent {
 								result.WriteByte('*')
@@ -163,5 +153,9 @@ func RedactAllJSONStrings(raw []byte, trie *Trie) []byte {
 		result.Write(raw[cursor:])
 	}
 
-	return result.Bytes()
+	// Copy before returning the buffer to the pool — mirrors the pattern in engine.go.
+	finalBytes := make([]byte, result.Len())
+	copy(finalBytes, result.Bytes())
+	jsonBufPool.Put(result)
+	return finalBytes
 }

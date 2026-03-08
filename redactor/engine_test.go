@@ -91,6 +91,61 @@ func TestWindowsRules(t *testing.T) {
 		})
 	}
 }
+func TestMacRules(t *testing.T) {
+	root := NewTrie("*", 2, 0)
+	err := LoadRulesFromDir("../rules", root)
+	if err != nil {
+		t.Fatalf("Failed to load rules: %v", err)
+	}
+
+	testFileData, err := os.ReadFile("../tests/mac_tests.json")
+	if err != nil {
+		t.Fatalf("Failed to read test file: %v", err)
+	}
+
+	var tests []TestCase
+	if err := json.Unmarshal(testFileData, &tests); err != nil {
+		t.Fatalf("Failed to unmarshal test cases: %v", err)
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.ID, func(t *testing.T) {
+			resultBytes := RedactBytes([]byte(tc.Input), root)
+			if string(resultBytes) != tc.Expected {
+				t.Errorf("\nInput:    %s\nExpected: %s\nGot:      %s", tc.Input, tc.Expected, string(resultBytes))
+			}
+		})
+	}
+}
+
+func TestJSONKeyRules(t *testing.T) {
+	root := NewTrie("*", 2, 0)
+	err := LoadRulesFromDir("../rules", root)
+	if err != nil {
+		t.Fatalf("Failed to load rules: %v", err)
+	}
+
+	testFileData, err := os.ReadFile("../tests/json_key_tests.json")
+	if err != nil {
+		t.Fatalf("Failed to read test file: %v", err)
+	}
+
+	var tests []TestCase
+	if err := json.Unmarshal(testFileData, &tests); err != nil {
+		t.Fatalf("Failed to unmarshal test cases: %v", err)
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.ID, func(t *testing.T) {
+			// JSON key sentinel tests always go through RedactAllJSONStrings
+			resultBytes := RedactAllJSONStrings([]byte(tc.Input), root)
+			if string(resultBytes) != tc.Expected {
+				t.Errorf("\nInput:    %s\nExpected: %s\nGot:      %s", tc.Input, tc.Expected, string(resultBytes))
+			}
+		})
+	}
+}
+
 func BenchmarkEngine_1MB_Raw(b *testing.B) {
 	root := NewTrie("********", 2, 0)
 

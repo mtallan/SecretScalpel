@@ -7,11 +7,12 @@ import (
 )
 
 type RegexRule struct {
-	ID       string
-	Re       *regexp.Regexp
-	Mask     string
-	Offset   int
-	Priority int
+	ID          string
+	Re          *regexp.Regexp
+	Mask        string
+	Offset      int
+	RedactAfter string
+	Priority    int
 }
 
 type RegexEdge struct {
@@ -24,6 +25,7 @@ type RuleMeta struct {
 	RedactIndices []int
 	CustomMask    string
 	Offset        int
+	RedactAfter   string
 	Priority      int
 }
 
@@ -33,34 +35,47 @@ type TrieNode struct {
 	Meta          *RuleMeta
 }
 
-var placeholderRegex = regexp.MustCompile(`^<(redact|any):(.+)>$`)
+var placeholderRegex = regexp.MustCompile(`(?i)^<(redact|any):(.+)>$`)
 
 type Trie struct {
-	Root       *TrieNode
-	MaxDepth   int
-	GlobalMask string // Renamed from DefaultMask
-	RegexRules []*RegexRule
+	Root              *TrieNode
+	MaxDepth          int
+	GlobalMask        string
+	RegexRules        []*RegexRule
+	JSONSensitiveKeys map[string]bool
 }
 
 func NewTrie(mask string, min int, max int) *Trie {
 	return &Trie{
-		Root:       &TrieNode{Children: make(map[string]*TrieNode)},
-		GlobalMask: mask, // Initialize the GlobalMask
+		Root:              &TrieNode{Children: make(map[string]*TrieNode)},
+		GlobalMask:        mask,
+		JSONSensitiveKeys: make(map[string]bool),
 	}
 }
 
-func (t *Trie) AddRegexRule(id, pattern, mask string, offset, priority int) {
+// AddJSONKeyRule registers a JSON object key whose value should always be
+// fully redacted, regardless of content. Keys are stored lowercased so
+// matching in RedactAllJSONStrings remains case-insensitive.
+func (t *Trie) AddJSONKeyRule(key string) {
+	t.JSONSensitiveKeys[strings.ToLower(key)] = true
+}
+
+func (t *Trie) IsEmpty() bool {
+	return len(t.Root.Children) == 0 && len(t.Root.RegexChildren) == 0 && len(t.RegexRules) == 0
+}
+
+func (t *Trie) AddRegexRule(id, pattern, mask string, offset int, redactAfter string, priority int) {
 	re, err := regexp.Compile(pattern)
 	if err != nil {
 		fmt.Printf("Invalid regex: %v\n", err)
 		return
 	}
 	t.RegexRules = append(t.RegexRules, &RegexRule{
-		ID: id, Re: re, Mask: mask, Offset: offset, Priority: priority,
+		ID: id, Re: re, Mask: mask, Offset: offset, RedactAfter: redactAfter, Priority: priority,
 	})
 }
 
-func (t *Trie) AddRule(id string, phrase []string, mask string, min int, max int, offset int, priority int) {
+func (t *Trie) AddRule(id string, phrase []string, mask string, min int, max int, offset int, redactAfter string, priority int) {
 	if len(phrase) == 0 {
 		return
 	}
@@ -75,7 +90,6 @@ func (t *Trie) AddRule(id string, phrase []string, mask string, min int, max int
 
 			if matches[1] == "redact" {
 				redactIndices = append(redactIndices, i)
-				//fmt.Printf("DEBUG: redact placeholder at index %d in rule %s\n", i, id)
 			}
 			pattern := "(?i)" + matches[2]
 			re, err := regexp.Compile(pattern)
@@ -118,7 +132,7 @@ func (t *Trie) AddRule(id string, phrase []string, mask string, min int, max int
 
 	curr.Meta = &RuleMeta{
 		ID: id, RedactIndices: redactIndices, CustomMask: mask,
-		Offset: offset, Priority: priority,
+		Offset: offset, RedactAfter: redactAfter, Priority: priority,
 	}
 	if len(phrase) > t.MaxDepth {
 		t.MaxDepth = len(phrase)

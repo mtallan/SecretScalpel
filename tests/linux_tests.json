@@ -52,12 +52,12 @@
   {
     "id": "LINUX-CURL-U-BASIC",
     "input": "curl -u admin:MySecret https://api.example.com",
-    "expected": "curl -u ************ https://api.example.com"
+    "expected": "curl -u ************** https://api.example.com"
   },
   {
     "id": "LINUX-CURL-USER-BASIC",
     "input": "curl --user admin:MySecret https://api.example.com",
-    "expected": "curl --user ************ https://api.example.com"
+    "expected": "curl --user ************** https://api.example.com"
   },
   {
     "id": "LINUX-WGET-PASSWORD",
@@ -108,5 +108,70 @@
     "id": "LINUX-NEGATIVE-GREP",
     "input": "grep -p pattern file.txt",
     "expected": "grep -p pattern file.txt"
+  },
+  {
+    "id": "LNX-NEG-MYSQL-P-FLAG-ONLY",
+    "input": "mysql -u root -p -h localhost",
+    "expected": "mysql -u root -p -h localhost"
+  },
+  {
+    "id": "LNX-NEG-MYSQL-PORT-ARG",
+    "input": "mysql -u root --port 3306 --host db",
+    "expected": "mysql -u root --port 3306 --host db"
+  },
+  {
+    "id": "LNX-NEG-FTP-PORT-NUMBER",
+    "input": "ftp ftp.example.com user 21",
+    "expected": "ftp ftp.example.com user 21"
+  },
+  {
+    "id": "LNX-NEG-FTP-FLAG-N",
+    "input": "ftp -n ftp.example.com 21",
+    "expected": "ftp -n ftp.example.com 21"
+  },
+  {
+    "id": "LNX-NEG-OPENSSL-NO-PASS",
+    "input": "openssl rsa -in key.pem -out key2.pem",
+    "expected": "openssl rsa -in key.pem -out key2.pem"
+  },
+  {
+    "id": "LNX-NEG-OPENSSL-FILE-SOURCE",
+    "input": "openssl rsa -passin file:key.pem -in enc.pem",
+    "expected": "openssl rsa -passin file:key.pem -in enc.pem"
+  },
+  {
+    "id": "LNX-NEG-OPENSSL-ENV-SOURCE",
+    "input": "openssl rsa -passin env:MY_PASS_VAR -in enc.pem",
+    "expected": "openssl rsa -passin env:MY_PASS_VAR -in enc.pem"
+  },
+  {
+    "id": "LNX-NEG-CURL-NO-COLON",
+    "input": "curl -u mytoken https://api.example.com",
+    "expected": "curl -u mytoken https://api.example.com"
+  },
+  {
+    "id": "LNX-NEG-SSHPASS-VERSION",
+    "input": "sshpass -V",
+    "expected": "sshpass -V"
+  },
+  {
+    "id": "LNX-NEG-REDIS-NO-AUTH",
+    "input": "redis-cli -h localhost -p 6379 ping",
+    "expected": "redis-cli -h localhost -p 6379 ping"
+  },
+  {
+    "id": "LNX-NEG-WGET-USER-ONLY",
+    "input": "wget --user alice https://example.com/file",
+    "expected": "wget --user alice https://example.com/file"
+  },
+  {
+    "id": "LNX-NEG-DOCKER-LOGIN-NO-PASS",
+    "input": "docker login --username bob registry.io",
+    "expected": "docker login --username bob registry.io"
+  },
+  {
+    "id": "LNX-NEG-SUDO-S-STANDALONE",
+    "input": "sudo -S apt update",
+    "expected": "sudo -S apt update"
   }
 ]

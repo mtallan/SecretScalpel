@@ -3,6 +3,7 @@ package redactor
 import (
 	"bytes"
 	"sort"
+	"strings"
 	"sync"
 )
 
@@ -14,10 +15,11 @@ type Token struct {
 }
 
 type RedactionTarget struct {
-	start  int
-	end    int
-	mask   string
-	offset int
+	start       int
+	end         int
+	mask        string
+	offset      int
+	redactAfter string
 }
 
 type pendingRedaction struct {
@@ -71,6 +73,7 @@ type byStart []finalInt
 func (b byStart) Len() int           { return len(b) }
 func (b byStart) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
 func (b byStart) Less(i, j int) bool { return b[i].start < b[j].start }
+
 func RedactBytes(raw []byte, trie *Trie) []byte {
 	if trie == nil || trie.Root == nil || len(raw) == 0 {
 		return raw
@@ -116,7 +119,7 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 					matchEnd:   end,
 					priority:   rr.Priority,
 					targets: []RedactionTarget{{
-						start: start, end: end, mask: rr.Mask, offset: rr.Offset,
+						start: start, end: end, mask: rr.Mask, offset: rr.Offset, redactAfter: rr.RedactAfter,
 					}},
 				})
 			}
@@ -148,8 +151,6 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 
 	for i := 0; i < len(tokens); i++ {
 		curr := trie.Root
-		//fmt.Printf("DEBUG root has %d literal children, %d regex children\n",
-		//len(curr.Children), len(curr.RegexChildren))
 		for j := i; j < len(tokens) && j < i+windowSize; j++ {
 			tok := tokens[j]
 			wordRaw := raw[tok.Start:tok.End]
@@ -171,7 +172,6 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 			if !ok {
 				for _, edge := range curr.RegexChildren {
 					if edge.Re.Match(wordRaw) {
-						//fmt.Printf("DEBUG: regex edge matched %q\n", wordRaw)
 						next = edge.Node
 						ok = true
 						break
@@ -190,10 +190,11 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 						tIdx := i + relIdx
 						if tIdx < len(tokens) {
 							targets = append(targets, RedactionTarget{
-								start:  tokens[tIdx].Start,
-								end:    tokens[tIdx].End,
-								mask:   curr.Meta.CustomMask,
-								offset: curr.Meta.Offset,
+								start:       tokens[tIdx].Start,
+								end:         tokens[tIdx].End,
+								mask:        curr.Meta.CustomMask,
+								offset:      curr.Meta.Offset,
+								redactAfter: curr.Meta.RedactAfter,
 							})
 						}
 					}
@@ -237,7 +238,22 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 		ws.claimed = append(ws.claimed, interval{r.matchStart, r.matchEnd})
 
 		for _, t := range r.targets {
-			actualStart := t.start + t.offset
+			// Compute actualStart: prefer redactAfter (dynamic) over offset (legacy).
+			// redactAfter searches for the literal prefix inside the token and skips past it,
+			// so the offset is always correct regardless of the prefix length.
+			actualStart := t.start
+			if t.redactAfter != "" {
+				tokenStr := string(raw[t.start:t.end])
+				idx := strings.Index(strings.ToLower(tokenStr), strings.ToLower(t.redactAfter))
+				if idx == -1 {
+					// Delimiter not found in token — skip this target rather than redacting wrong bytes
+					continue
+				}
+				actualStart = t.start + idx + len(t.redactAfter)
+			} else {
+				actualStart = t.start + t.offset
+			}
+
 			if actualStart < 0 || actualStart >= t.end {
 				continue
 			}
