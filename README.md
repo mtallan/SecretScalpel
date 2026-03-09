@@ -16,7 +16,7 @@ SecretScalpel uses a token-aware rule engine that understands command structure.
 
 ## How It Works
 
-SecretScalpel tokenizes each log line and walks a rule trie. Rules match on sequences of tokens, not raw strings. A rule like:
+SecretScalpel breaks each log line into words (tokens) and compares the structure against a dictionary of known command patterns. Rules match on sequences of tokens, not just raw strings. A rule like:
 
 ```json
 { "id": "WIN-PSEXEC", "phrase": ["psexec", "-u", "<any>", "-p", "<REDACT>"] }
@@ -36,7 +36,9 @@ Benchmarked on an i9-13900K (24 cores):
 | Realistic JSON log data (Single Core) | **~64 MB/s** |
 | Worst case (raw logs, secrets on ~80% of lines) | ~4 MB/s |
 
-Realistic throughput on a single machine translates to over **80 TB/day**. Single-core performance is **~64 MB/s**, making it efficient even in resource-constrained sidecar containers. The clean-path for both raw and JSON logs is highly optimized to minimize memory allocations. Key optimizations include per-rule `required_byte` guards that skip regex evaluation when a trigger character is absent, cache-line-padded metrics to eliminate false sharing across workers, and a pooled workspace to avoid per-line allocations.
+Realistic throughput on a single machine translates to over **80 TB/day**. Single-core performance is **~64 MB/s**, making it efficient even in resource-constrained sidecar containers.
+
+The engine is optimized for the 99% of log lines that *don't* contain secrets. It uses a specialized dictionary lookup (Trie) that is significantly faster than standard Regex. It also employs advanced memory management techniques to minimize CPU usage, ensuring it can run alongside other workloads without impacting performance.
 
 Honest caveat: the "worst-case" benchmark uses data where almost every line contains a credential, forcing the engine to run multiple regex passes and sort thousands of redaction targets per megabyte. Real production log data does not look like this. The ~1020 MB/s figure reflects actual MSSP workloads with structured JSON logs.
 
@@ -247,12 +249,10 @@ Lines exceeding 1MB are dropped with a warning to prevent unbounded memory growt
 
 ## Contributing
 
-Rule contributions are the highest-value contribution. If you have credential patterns from your own environment that aren't covered, open a PR with:
-- The rule JSON
-- An example input line
-- The expected redacted output
-
-New rules must have a corresponding test case in `tests/`.
+Rule contributions are the highest-value contribution. Please read CONTRIBUTING.md for a detailed guide on:
+- Rule JSON format and advanced fields
+- How to add test cases
+- Performance best practices
 
 ## License
 
