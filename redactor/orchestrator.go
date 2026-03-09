@@ -153,8 +153,8 @@ func ProcessStream(ctx context.Context, r io.Reader, w io.Writer, triePtr *atomi
 	index := 0
 
 	currentBatch := bufferPool.Get().(*bytes.Buffer)
-	var lineBytes int     // bytes accumulated for the current logical line
-	var droppingLine bool // true when current line exceeded maxLineBytes
+	var lineBytes int      // bytes accumulated for the current logical line
+	var droppingLine bool  // true when current line exceeded maxLineBytes
 	var localBytesIn int64 // batched counter flushed at each chunk dispatch
 
 	for {
@@ -191,6 +191,10 @@ func ProcessStream(ctx context.Context, r io.Reader, w io.Writer, triePtr *atomi
 		if endsLine {
 			lineBytes = 0
 			droppingLine = false
+		}
+
+		if ctx.Err() != nil {
+			break
 		}
 
 		if err != nil {

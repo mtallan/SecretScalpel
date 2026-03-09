@@ -48,6 +48,7 @@ type EngineWorkspace struct {
 	resolved []finalInt
 	filtered []finalInt
 	targets  []RedactionTarget
+	tokens   []Token
 	outBuf   bytes.Buffer
 }
 
@@ -55,11 +56,12 @@ type EngineWorkspace struct {
 var workspacePool = sync.Pool{
 	New: func() any {
 		return &EngineWorkspace{
-			toRedact: make([]pendingRedaction, 0, 64),
-			claimed:  make([]interval, 0, 64),
-			resolved: make([]finalInt, 0, 64),
-			filtered: make([]finalInt, 0, 64),
-			targets:  make([]RedactionTarget, 0, 64),
+			toRedact: make([]pendingRedaction, 0, 512),
+			claimed:  make([]interval, 0, 128),
+			resolved: make([]finalInt, 0, 128),
+			filtered: make([]finalInt, 0, 128),
+			targets:  make([]RedactionTarget, 0, 512),
+			tokens:   make([]Token, 0, 8192),
 		}
 	},
 }
@@ -128,6 +130,7 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 	ws.resolved = ws.resolved[:0]
 	ws.filtered = ws.filtered[:0]
 	ws.targets = ws.targets[:0]
+	ws.tokens = ws.tokens[:0]
 	ws.outBuf.Reset()
 
 	if hasRegexTrigger {
@@ -162,8 +165,6 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 	// =========================================================
 	// PHASE 1: Tokenization & Sliding Window (Stack Allocated)
 	// =========================================================
-	var stackTokens [256]Token
-	tokens := stackTokens[:0]
 	currentPos := 0
 	remaining := raw
 
@@ -174,7 +175,7 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 		}
 		sPos := currentPos + (advance - len(val))
 		ePos := currentPos + advance
-		tokens = append(tokens, Token{Start: sPos, End: ePos})
+		ws.tokens = append(ws.tokens, Token{Start: sPos, End: ePos})
 		currentPos += advance
 		remaining = remaining[advance:]
 	}
@@ -182,10 +183,10 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 	windowSize := trie.MaxDepth + 1
 	var scratch [256]byte
 
-	for i := 0; i < len(tokens); i++ {
+	for i := 0; i < len(ws.tokens); i++ {
 		curr := trie.Root
-		for j := i; j < len(tokens) && j < i+windowSize; j++ {
-			tok := tokens[j]
+		for j := i; j < len(ws.tokens) && j < i+windowSize; j++ {
+			tok := ws.tokens[j]
 			wordRaw := raw[tok.Start:tok.End]
 
 			n := len(wordRaw)
@@ -206,8 +207,7 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 			// By using an unsafe pointer cast, we can perform the map lookup
 			// without allocating. This is safe because the underlying `scratch`
 			// array is not modified for the lifetime of this temporary string key.
-			slice := scratch[:n]
-			tokenKey := *(*string)(unsafe.Pointer(&slice))
+			tokenKey := unsafe.String(&scratch[0], n)
 			next, ok := curr.Children[tokenKey]
 			if !ok {
 				for _, edge := range curr.RegexChildren {
@@ -228,10 +228,10 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 					targetsStart := len(ws.targets)
 					for _, relIdx := range curr.Meta.RedactIndices {
 						tIdx := i + relIdx
-						if tIdx < len(tokens) {
+						if tIdx < len(ws.tokens) {
 							ws.targets = append(ws.targets, RedactionTarget{
-								start:            tokens[tIdx].Start,
-								end:              tokens[tIdx].End,
+								start:            ws.tokens[tIdx].Start,
+								end:              ws.tokens[tIdx].End,
 								mask:             curr.Meta.CustomMask,
 								redactAfter:      curr.Meta.RedactAfter,
 								redactAfterBytes: curr.Meta.RedactAfterBytes,
@@ -240,8 +240,8 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 					}
 					if len(ws.targets) > targetsStart {
 						ws.toRedact = append(ws.toRedact, pendingRedaction{
-							matchStart: tokens[i].Start,
-							matchEnd:   tokens[j].End,
+							matchStart: ws.tokens[i].Start,
+							matchEnd:   ws.tokens[j].End,
 							priority:   curr.Meta.Priority,
 							targets:    ws.targets[targetsStart:],
 							minLength:  curr.Meta.MinLength,
@@ -402,6 +402,7 @@ func RedactBytesToWriter(w io.Writer, raw []byte, trie *Trie) {
 	ws.resolved = ws.resolved[:0]
 	ws.filtered = ws.filtered[:0]
 	ws.targets = ws.targets[:0]
+	ws.tokens = ws.tokens[:0]
 	// ws.outBuf is not used in this function.
 
 	if hasRegexTrigger {
@@ -436,8 +437,6 @@ func RedactBytesToWriter(w io.Writer, raw []byte, trie *Trie) {
 	// =========================================================
 	// PHASE 1: Tokenization & Sliding Window (Stack Allocated)
 	// =========================================================
-	var stackTokens [256]Token
-	tokens := stackTokens[:0]
 	currentPos := 0
 	remaining := raw
 
@@ -448,7 +447,7 @@ func RedactBytesToWriter(w io.Writer, raw []byte, trie *Trie) {
 		}
 		sPos := currentPos + (advance - len(val))
 		ePos := currentPos + advance
-		tokens = append(tokens, Token{Start: sPos, End: ePos})
+		ws.tokens = append(ws.tokens, Token{Start: sPos, End: ePos})
 		currentPos += advance
 		remaining = remaining[advance:]
 	}
@@ -456,10 +455,10 @@ func RedactBytesToWriter(w io.Writer, raw []byte, trie *Trie) {
 	windowSize := trie.MaxDepth + 1
 	var scratch [256]byte
 
-	for i := 0; i < len(tokens); i++ {
+	for i := 0; i < len(ws.tokens); i++ {
 		curr := trie.Root
-		for j := i; j < len(tokens) && j < i+windowSize; j++ {
-			tok := tokens[j]
+		for j := i; j < len(ws.tokens) && j < i+windowSize; j++ {
+			tok := ws.tokens[j]
 			wordRaw := raw[tok.Start:tok.End]
 
 			n := len(wordRaw)
@@ -480,8 +479,7 @@ func RedactBytesToWriter(w io.Writer, raw []byte, trie *Trie) {
 			// By using an unsafe pointer cast, we can perform the map lookup
 			// without allocating. This is safe because the underlying `scratch`
 			// array is not modified for the lifetime of this temporary string key.
-			slice := scratch[:n]
-			tokenKey := *(*string)(unsafe.Pointer(&slice))
+			tokenKey := unsafe.String(&scratch[0], n)
 			next, ok := curr.Children[tokenKey]
 			if !ok {
 				for _, edge := range curr.RegexChildren {
@@ -502,10 +500,10 @@ func RedactBytesToWriter(w io.Writer, raw []byte, trie *Trie) {
 					targetsStart := len(ws.targets)
 					for _, relIdx := range curr.Meta.RedactIndices {
 						tIdx := i + relIdx
-						if tIdx < len(tokens) {
+						if tIdx < len(ws.tokens) {
 							ws.targets = append(ws.targets, RedactionTarget{
-								start:            tokens[tIdx].Start,
-								end:              tokens[tIdx].End,
+								start:            ws.tokens[tIdx].Start,
+								end:              ws.tokens[tIdx].End,
 								mask:             curr.Meta.CustomMask,
 								redactAfter:      curr.Meta.RedactAfter,
 								redactAfterBytes: curr.Meta.RedactAfterBytes,
@@ -514,8 +512,8 @@ func RedactBytesToWriter(w io.Writer, raw []byte, trie *Trie) {
 					}
 					if len(ws.targets) > targetsStart {
 						ws.toRedact = append(ws.toRedact, pendingRedaction{
-							matchStart: tokens[i].Start,
-							matchEnd:   tokens[j].End,
+							matchStart: ws.tokens[i].Start,
+							matchEnd:   ws.tokens[j].End,
 							priority:   curr.Meta.Priority,
 							targets:    ws.targets[targetsStart:],
 							minLength:  curr.Meta.MinLength,

@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: secretscalpel
+  namespace: security
+  labels:
+    app: secretscalpel
+spec:
+  selector:
+    matchLabels:
+      app: secretscalpel
+  template:
+    metadata:
+      labels:
+        app: secretscalpel
+    spec:
+      containers:
+      - name: secretscalpel
+        image: secretscalpel:v0.1.0
+        imagePullPolicy: IfNotPresent
+        # Example usage: Tail the host's syslog, pipe through secretscalpel,
+        # and write to stdout. A separate log collector (e.g., Fluentd) would
+        # then scrape this container's output.
+        command: ["/bin/sh", "-c"]
+        args:
+          - tail -F /var/log/syslog | /app/secretscalpel -json=false -workers=2
+        resources:
+          limits:
+            cpu: "200m"
+            memory: "256Mi"
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+        volumeMounts:
+        - name: host-logs
+          mountPath: /var/log
+          readOnly: true
+        - name: rules
+          mountPath: /rules
+          readOnly: true
+      volumes:
+      - name: host-logs
+        hostPath:
+          path: /var/log
+      - name: rules
+        configMap:
+          name: secretscalpel-rules
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: secretscalpel-rules
+  namespace: security
+data:
+  # Example rule mounted into /rules/custom.json
+  custom.json: |
+    [{"id": "K8S-TOKEN", "phrase": ["Bearer", "<REDACT>"], "priority": 1}]

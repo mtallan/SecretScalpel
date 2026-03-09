@@ -7,12 +7,14 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/http/pprof"
 	"os"
 	"os/signal"
 	"runtime"
 	"strconv"
 	"sync/atomic"
 	"syscall"
+	"time"
 
 	"github.com/mtallan/SecretScalpel/redactor"
 )
@@ -115,6 +117,14 @@ func main() {
 			w.Header().Set("Content-Type", "text/plain; version=0.0.4")
 			redactor.Default.WritePrometheus(w)
 		})
+
+		// Register pprof handlers for profiling
+		mux.HandleFunc("/debug/pprof/", pprof.Index)
+		mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+		mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+		mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+
 		go func() {
 			logger.Info("Admin server listening", "addr", *adminAddr)
 			if err := http.ListenAndServe(*adminAddr, mux); err != nil {
@@ -128,6 +138,7 @@ func main() {
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM, syscall.SIGHUP)
 	go func() {
+		var shutdown bool
 		for sig := range sigCh {
 			if sig == syscall.SIGHUP {
 				logger.Info("SIGHUP received, reloading rules", "rules_dir", *rulesDir)
@@ -140,9 +151,29 @@ func main() {
 				logger.Info("Rules reloaded", "total", newTrie.RuleCount, "regex", len(newTrie.RegexRules))
 				continue
 			}
+			if shutdown {
+				os.Exit(1)
+			}
 			logger.Info("Shutdown signal received, draining in-flight work")
 			cancel()
-			return
+
+			// If reading from TTY, we can't unblock the read reliably and there's no
+			// upstream buffer to drain. Exit quickly.
+			shutdownDelay := 3 * time.Second
+			if stat, err := os.Stdin.Stat(); err == nil && (stat.Mode()&os.ModeCharDevice) != 0 {
+				shutdownDelay = 100 * time.Millisecond
+			} else {
+				if err := os.Stdin.SetReadDeadline(time.Now()); err != nil {
+					logger.Warn("Could not set read deadline", "error", err)
+				}
+			}
+			_ = os.Stdin.Close()
+			shutdown = true
+			go func() {
+				time.Sleep(shutdownDelay)
+				logger.Error("Shutdown timed out, forcing exit")
+				os.Exit(1)
+			}()
 		}
 	}()
 

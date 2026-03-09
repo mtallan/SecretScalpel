@@ -32,12 +32,13 @@ Benchmarked on an i9-13900K (24 cores):
 
 | Scenario | Throughput |
 |---|---|
-| Realistic JSON log data (1 secret per 20 lines) | **~1000 MB/s** |
-| Worst case (raw logs, secrets on ~80% of lines) | 67 MB/s |
+| Realistic JSON log data (1 secret per 20 lines) | **~1020 MB/s** |
+| Realistic JSON log data (Single Core) | **~64 MB/s** |
+| Worst case (raw logs, secrets on ~80% of lines) | ~4 MB/s |
 
-Realistic throughput on a single machine translates to over **80 TB/day**. The clean-path for both raw and JSON logs is highly optimized to minimize memory allocations. Key optimizations include per-rule `required_byte` guards that skip regex evaluation when a trigger character is absent, cache-line-padded metrics to eliminate false sharing across workers, and a pooled workspace to avoid per-line allocations.
+Realistic throughput on a single machine translates to over **80 TB/day**. Single-core performance is **~64 MB/s**, making it efficient even in resource-constrained sidecar containers. The clean-path for both raw and JSON logs is highly optimized to minimize memory allocations. Key optimizations include per-rule `required_byte` guards that skip regex evaluation when a trigger character is absent, cache-line-padded metrics to eliminate false sharing across workers, and a pooled workspace to avoid per-line allocations.
 
-Honest caveat: the "worst-case" benchmark uses data where almost every line contains a credential. Real production log data does not look like this. The ~1000 MB/s figure reflects actual MSSP workloads with structured JSON logs.
+Honest caveat: the "worst-case" benchmark uses data where almost every line contains a credential, forcing the engine to run multiple regex passes and sort thousands of redaction targets per megabyte. Real production log data does not look like this. The ~1020 MB/s figure reflects actual MSSP workloads with structured JSON logs.
 
 ## Rule Format
 
