@@ -69,6 +69,7 @@ func main() {
 	if err != nil {
 		if *failOpen {
 			logger.Warn("Failed to load rules, passing through unredacted", "error", err)
+			fmt.Fprintf(os.Stdout, `{"secretscalpel_warning":"REDACTION_FAILED_UNREDACTED_PAYLOAD_FOLLOWS"}`+"\n")
 			io.Copy(os.Stdout, os.Stdin)
 			return
 		}
