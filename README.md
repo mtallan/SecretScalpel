@@ -10,6 +10,8 @@ Windows alerts are full of credentials. `psexec` commands, `net use` strings, da
 
 Most teams handle this with regex. Regex doesn't understand context. It doesn't know that `-p` means password in `psexec` but not in `grep`. It fires on things it shouldn't and misses things it should catch.
 
+Generic PII/DLP cleaners often rely on slow, probabilistic heuristics designed for human documents. When applied to high-volume technical logs, they suffer from low throughput and high false-positive rates (flagging git hashes or UUIDs as secrets).
+
 SecretScalpel uses a token-aware rule engine that understands command structure. It knows that in `net use Z: \\server P@ssw0rd domain` the fourth token is a credential — not because it matched a pattern on the word "password", but because it understands the structure of a Windows `net use` command.
 
 ## How It Works
