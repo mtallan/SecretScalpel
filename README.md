@@ -1,5 +1,7 @@
 # SecretScalpel
 
+<p align="center"><img src="logo.png" width="400"/></p>
+
 A semantic log sanitization engine for security teams. Built to strip credentials from alert data before it reaches your SOAR, your case comments, and your customers.
 
 ## The Problem
