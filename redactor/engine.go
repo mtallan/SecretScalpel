@@ -132,11 +132,10 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 
 	if hasRegexTrigger {
 		for _, rr := range trie.RegexRules {
-			if !rr.Re.Match(raw) {
+			if rr.RequiredByte != 0 && bytes.IndexByte(raw, rr.RequiredByte) < 0 {
 				continue
 			}
-			matches := rr.Re.FindAllSubmatchIndex(raw, -1)
-			for _, match := range matches {
+			for _, match := range rr.Re.FindAllSubmatchIndex(raw, -1) {
 				start, end := match[0], match[1]
 				for i := 2; i < len(match); i += 2 {
 					if match[i] != -1 {
@@ -342,6 +341,10 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 		}
 	}
 
+	if n := int64(len(ws.filtered)); n > 0 {
+		Default.RedactionsApplied.Add(n)
+	}
+
 	ws.outBuf.Grow(len(raw))
 	writePos := 0
 	for _, inv := range ws.filtered {
@@ -403,11 +406,10 @@ func RedactBytesToWriter(w io.Writer, raw []byte, trie *Trie) {
 
 	if hasRegexTrigger {
 		for _, rr := range trie.RegexRules {
-			if !rr.Re.Match(raw) {
+			if rr.RequiredByte != 0 && bytes.IndexByte(raw, rr.RequiredByte) < 0 {
 				continue
 			}
-			matches := rr.Re.FindAllSubmatchIndex(raw, -1)
-			for _, match := range matches {
+			for _, match := range rr.Re.FindAllSubmatchIndex(raw, -1) {
 				start, end := match[0], match[1]
 				for i := 2; i < len(match); i += 2 {
 					if match[i] != -1 {
@@ -608,6 +610,10 @@ func RedactBytesToWriter(w io.Writer, raw []byte, trie *Trie) {
 			}
 			ws.filtered = append(ws.filtered, ws.resolved[i])
 		}
+	}
+
+	if n := int64(len(ws.filtered)); n > 0 {
+		Default.RedactionsApplied.Add(n)
 	}
 
 	writePos := 0

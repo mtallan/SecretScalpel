@@ -15,6 +15,7 @@ type RegexRule struct {
 	Priority         int
 	MinLength        int
 	MaxLength        int
+	RequiredByte     byte // if non-zero, skip this rule unless this byte is present in the input
 }
 
 type RegexEdge struct {
@@ -52,6 +53,7 @@ type Trie struct {
 	GlobalMask        string
 	RegexRules        []*RegexRule
 	JSONSensitiveKeys *JSONKeyTrieNode
+	RuleCount         int // total rules loaded (trie + regex + json_key)
 }
 
 func NewTrie(mask string, min int, max int) *Trie {
@@ -66,6 +68,7 @@ func NewTrie(mask string, min int, max int) *Trie {
 // fully redacted, regardless of content. Keys are stored lowercased so
 // matching in RedactAllJSONStrings remains case-insensitive.
 func (t *Trie) AddJSONKeyRule(key string) {
+	t.RuleCount++
 	curr := t.JSONSensitiveKeys
 	lowerKey := strings.ToLower(key)
 	for i := 0; i < len(lowerKey); i++ {
@@ -82,15 +85,16 @@ func (t *Trie) IsEmpty() bool {
 	return len(t.Root.Children) == 0 && len(t.Root.RegexChildren) == 0 && len(t.RegexRules) == 0
 }
 
-func (t *Trie) AddRegexRule(id, pattern, mask string, min, max int, redactAfter string, priority int) {
+func (t *Trie) AddRegexRule(id, pattern, mask string, min, max int, redactAfter string, priority int, requiredByte byte) {
 	re, err := regexp.Compile(pattern)
 	if err != nil {
 		slog.Error("Invalid regex in rule", "rule_id", id, "pattern", pattern, "error", err)
 		return
 	}
+	t.RuleCount++
 	t.RegexRules = append(t.RegexRules, &RegexRule{
 		ID: id, Re: re, Mask: mask, RedactAfter: redactAfter, RedactAfterBytes: []byte(redactAfter), Priority: priority,
-		MinLength: min, MaxLength: max,
+		MinLength: min, MaxLength: max, RequiredByte: requiredByte,
 	})
 }
 
@@ -149,6 +153,7 @@ func (t *Trie) AddRule(id string, phrase []string, mask string, min, max int, re
 		curr = curr.Children[key]
 	}
 
+	t.RuleCount++
 	curr.Meta = &RuleMeta{
 		ID: id, RedactIndices: redactIndices, CustomMask: mask,
 		RedactAfter: redactAfter, RedactAfterBytes: []byte(redactAfter), Priority: priority,

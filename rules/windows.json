@@ -22,6 +22,7 @@
     "comment": "Matches impacket-style credentials targeting an IP address, e.g., user:pass@10.0.0.1. This is safer than a general-purpose hostname match.",
     "phrase": ["(?i)(?:[a-zA-Z0-9_.-]+[\\\\/])?[a-zA-Z0-9_.-]+:([^\\s:]+)@(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"],
     "isRegex": true,
+    "required_byte": "@",
     "priority": 4,
     "enabled": true,
     "min_length": 3
@@ -31,6 +32,7 @@
     "comment": "Matches impacket-style credentials targeting a single-word hostname (no dots), e.g., user:pass@DC01. This avoids false positives on email addresses.",
     "phrase": ["(?i)(?:[a-zA-Z0-9_.-]+[\\\\/])?[a-zA-Z0-9_.-]+:([^\\s:]+)@[a-zA-Z0-9_-]+"],
     "isRegex": true,
+    "required_byte": "@",
     "priority": 4,
     "enabled": true,
     "min_length": 3
@@ -40,6 +42,7 @@
     "comment": "Matches standard URL basic authentication credentials like https://user:pass@host.",
     "phrase": ["(?i)https?://[^\\s:]+:([^\\s@:]+)@[^\\s/]+"],
     "isRegex": true,
+    "required_byte": "@",
     "priority": 4,
     "enabled": true,
     "min_length": 3
@@ -49,15 +52,15 @@
     "comment": "Matches database connection string passwords like ;Password=secret; or ;Pwd=secret.",
     "phrase": ["(?i);(?:Password|Pwd)\\s*=\\s*([^;\"']+)"],
     "isRegex": true,
+    "required_byte": ";",
     "priority": 4,
     "enabled": true,
     "min_length": 3
   },
   {
     "id": "PS-ENV-VAR-ASSIGNMENT",
-    "comment": "Matches PowerShell environment variable assignments like $env:PASSWORD = 'secret'.",
-    "phrase": ["(?i)\\$env:(?:password|pass|pwd|secret|token|apikey|cred)\\s*=\\s*['\"]?([^'\"\\s]+)['\"]?"],
-    "isRegex": true,
+    "comment": "Matches PowerShell environment variable assignments like $env:PASSWORD = secret. Token sequence: <$env:VAR> <=> <value>.",
+    "phrase": ["<any:(?i)\\$env:(?:password|pass|pwd|secret|token|apikey|cred)>", "=", "<REDACT>"],
     "priority": 3,
     "enabled": true,
     "min_length": 4

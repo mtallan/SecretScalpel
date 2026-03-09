@@ -44,6 +44,7 @@
       "(?i)git\\\\s+clone\\\\s+https?://(?:.+?):(.+)@"
     ],
     "isRegex": true,
+    "required_byte": "@",
     "priority": 1,
     "enabled": true,
     "min_length": 5

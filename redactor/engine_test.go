@@ -2,10 +2,12 @@ package redactor
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
 	"os"
+	"sync/atomic"
 	"testing"
 )
 
@@ -16,6 +18,7 @@ type TestCase struct {
 }
 
 var testRoot *Trie
+var testTriePtr atomic.Pointer[Trie]
 
 func TestMain(m *testing.M) {
 	testRoot = NewTrie("*", 2, 0)
@@ -24,6 +27,7 @@ func TestMain(m *testing.M) {
 		slog.Error("Failed to load rules for tests", "error", err)
 		os.Exit(1)
 	}
+	testTriePtr.Store(testRoot)
 	os.Exit(m.Run())
 }
 
@@ -165,6 +169,8 @@ func BenchmarkOrchestrator_1MB_JSONWalker(b *testing.B) {
 	if err != nil {
 		b.Fatalf("Failed to load rules: %v", err)
 	}
+	var rootPtr atomic.Pointer[Trie]
+	rootPtr.Store(root)
 
 	chunk := []byte(`{"log": "net use Z: \\server\share P@ssw0rd123! domain", "level": "INFO"}` + "\n" +
 		`{"log": "psexec -u admin -p SuperSecret! cmd.exe", "level": "WARN"}` + "\n" +
@@ -183,7 +189,7 @@ func BenchmarkOrchestrator_1MB_JSONWalker(b *testing.B) {
 
 	for b.Loop() {
 		// Use io.Discard because we don't care about the final output during the speed test
-		_ = ProcessStream(bytes.NewReader(rawBytes), io.Discard, root, true, 0)
+		_ = ProcessStream(context.Background(), bytes.NewReader(rawBytes), io.Discard, &rootPtr, true, 0)
 	}
 }
 func BenchmarkOrchestrator_1MB_Realistic(b *testing.B) {
@@ -192,6 +198,8 @@ func BenchmarkOrchestrator_1MB_Realistic(b *testing.B) {
 	if err != nil {
 		b.Fatalf("Failed to load rules: %v", err)
 	}
+	var rootPtr atomic.Pointer[Trie]
+	rootPtr.Store(root)
 
 	// 1 secret per ~20 normal lines — closer to real MSSP data
 	chunk := []byte(
@@ -226,7 +234,7 @@ func BenchmarkOrchestrator_1MB_Realistic(b *testing.B) {
 	b.SetBytes(int64(len(rawBytes)))
 
 	for b.Loop() {
-		_ = ProcessStream(bytes.NewReader(rawBytes), io.Discard, root, true, 0)
+		_ = ProcessStream(context.Background(), bytes.NewReader(rawBytes), io.Discard, &rootPtr, true, 0)
 	}
 }
 func BenchmarkOrchestrator_100MB_Realistic(b *testing.B) {
@@ -235,6 +243,8 @@ func BenchmarkOrchestrator_100MB_Realistic(b *testing.B) {
 	if err != nil {
 		b.Fatalf("Failed to load rules: %v", err)
 	}
+	var rootPtr atomic.Pointer[Trie]
+	rootPtr.Store(root)
 
 	chunk := []byte(
 		`{"log": "User alice logged in from 10.0.0.1", "level": "INFO"}` + "\n" +
@@ -268,6 +278,6 @@ func BenchmarkOrchestrator_100MB_Realistic(b *testing.B) {
 	b.SetBytes(int64(len(rawBytes)))
 
 	for b.Loop() {
-		_ = ProcessStream(bytes.NewReader(rawBytes), io.Discard, root, true, 0)
+		_ = ProcessStream(context.Background(), bytes.NewReader(rawBytes), io.Discard, &rootPtr, true, 0)
 	}
 }
