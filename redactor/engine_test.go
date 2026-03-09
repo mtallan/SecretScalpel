@@ -130,8 +130,9 @@ custom-cli.exe /p:MyP@ssword! /silent
 	// Don't count the setup time
 	b.ReportAllocs()                 // Tell us how much memory we are allocating
 	b.SetBytes(int64(len(rawBytes))) // Allows Go to calculate MB/s
+	b.ResetTimer()
 
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		_ = RedactBytes(rawBytes, root)
 	}
 }
@@ -194,8 +195,9 @@ func BenchmarkOrchestrator_1MB_JSONWalker(b *testing.B) {
 
 	b.ReportAllocs()
 	b.SetBytes(int64(len(rawBytes)))
+	b.ResetTimer()
 
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		// Use io.Discard because we don't care about the final output during the speed test
 		_ = ProcessStream(context.Background(), bytes.NewReader(rawBytes), io.Discard, &rootPtr, true, 0)
 	}
@@ -242,8 +244,9 @@ func BenchmarkOrchestrator_1MB_Realistic(b *testing.B) {
 
 	b.ReportAllocs()
 	b.SetBytes(int64(len(rawBytes)))
+	b.ResetTimer()
 
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		_ = ProcessStream(context.Background(), bytes.NewReader(rawBytes), io.Discard, &rootPtr, true, 0)
 	}
 }
@@ -288,8 +291,9 @@ func BenchmarkOrchestrator_100MB_Realistic(b *testing.B) {
 
 	b.ReportAllocs()
 	b.SetBytes(int64(len(rawBytes)))
+	b.ResetTimer()
 
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		_ = ProcessStream(context.Background(), bytes.NewReader(rawBytes), io.Discard, &rootPtr, true, 0)
 	}
 }
@@ -335,8 +339,9 @@ func BenchmarkOrchestrator_100MB_Realistic_1Core(b *testing.B) {
 
 	b.ReportAllocs()
 	b.SetBytes(int64(len(rawBytes)))
+	b.ResetTimer()
 
-	for b.Loop() {
+	for i := 0; i < b.N; i++ {
 		// Force workers=1 to simulate a single-core environment
 		_ = ProcessStream(context.Background(), bytes.NewReader(rawBytes), io.Discard, &rootPtr, true, 1)
 	}
