@@ -5,7 +5,6 @@ import (
 	"io"
 	"sort"
 	"sync"
-	"unsafe"
 )
 
 var globalStars = bytes.Repeat([]byte("*"), 2048)
@@ -65,26 +64,6 @@ var workspacePool = sync.Pool{
 		}
 	},
 }
-
-type byPriority []pendingRedaction
-
-func (b byPriority) Len() int      { return len(b) }
-func (b byPriority) Swap(i, j int) { b[i], b[j] = b[j], b[i] }
-func (b byPriority) Less(i, j int) bool {
-	if b[i].priority != b[j].priority {
-		return b[i].priority < b[j].priority
-	}
-	// If priorities are equal, the longer match wins. This is a critical
-	// tie-breaker to ensure that more specific rules (which are typically
-	// longer) are preferred over less specific, shorter rules.
-	return (b[i].matchEnd - b[i].matchStart) > (b[j].matchEnd - b[j].matchStart)
-}
-
-type byStart []finalInt
-
-func (b byStart) Len() int           { return len(b) }
-func (b byStart) Swap(i, j int)      { b[i], b[j] = b[j], b[i] }
-func (b byStart) Less(i, j int) bool { return b[i].start < b[j].start }
 
 // bytesIndexCaseInsensitive performs a case-insensitive search for `sep` in `s`.
 // It is a byte-slice equivalent of strings.Index(strings.ToLower(s), strings.ToLower(sep)).
@@ -202,13 +181,9 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 				}
 			}
 
-			// This is a critical performance optimization. The `string(scratch[:n])`
-			// conversion would normally cause a heap allocation for every token.
-			// By using an unsafe pointer cast, we can perform the map lookup
-			// without allocating. This is safe because the underlying `scratch`
-			// array is not modified for the lifetime of this temporary string key.
-			tokenKey := unsafe.String(&scratch[0], n)
-			next, ok := curr.Children[tokenKey]
+			// The Go compiler optimizes `m[string(b)]` to avoid allocation when looking up
+			// a byte slice key in a map[string]T.
+			next, ok := curr.Children[string(scratch[:n])]
 			if !ok {
 				for _, edge := range curr.RegexChildren {
 					if edge.Re.Match(wordRaw) {
@@ -263,7 +238,14 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 	// =========================================================
 	// PHASE 2: Reconstruction & Overlap Protection
 	// =========================================================
-	sort.Sort(byPriority(ws.toRedact))
+	sort.Slice(ws.toRedact, func(i, j int) bool {
+		a, b := ws.toRedact[i], ws.toRedact[j]
+		if a.priority != b.priority {
+			return a.priority < b.priority
+		}
+		// If priorities are equal, the longer match wins.
+		return (a.matchEnd - a.matchStart) > (b.matchEnd - b.matchStart)
+	})
 
 	for _, r := range ws.toRedact {
 		overlap := false
@@ -328,7 +310,9 @@ func RedactBytes(raw []byte, trie *Trie) []byte {
 		}
 	}
 
-	sort.Sort(byStart(ws.resolved))
+	sort.Slice(ws.resolved, func(i, j int) bool {
+		return ws.resolved[i].start < ws.resolved[j].start
+	})
 
 	if len(ws.resolved) > 0 {
 		ws.filtered = append(ws.filtered, ws.resolved[0])
@@ -474,13 +458,9 @@ func RedactBytesToWriter(w io.Writer, raw []byte, trie *Trie) {
 				}
 			}
 
-			// This is a critical performance optimization. The `string(scratch[:n])`
-			// conversion would normally cause a heap allocation for every token.
-			// By using an unsafe pointer cast, we can perform the map lookup
-			// without allocating. This is safe because the underlying `scratch`
-			// array is not modified for the lifetime of this temporary string key.
-			tokenKey := unsafe.String(&scratch[0], n)
-			next, ok := curr.Children[tokenKey]
+			// The Go compiler optimizes `m[string(b)]` to avoid allocation when looking up
+			// a byte slice key in a map[string]T.
+			next, ok := curr.Children[string(scratch[:n])]
 			if !ok {
 				for _, edge := range curr.RegexChildren {
 					if edge.Re.Match(wordRaw) {
@@ -536,7 +516,14 @@ func RedactBytesToWriter(w io.Writer, raw []byte, trie *Trie) {
 	// =========================================================
 	// PHASE 2: Reconstruction & Overlap Protection
 	// =========================================================
-	sort.Sort(byPriority(ws.toRedact))
+	sort.Slice(ws.toRedact, func(i, j int) bool {
+		a, b := ws.toRedact[i], ws.toRedact[j]
+		if a.priority != b.priority {
+			return a.priority < b.priority
+		}
+		// If priorities are equal, the longer match wins.
+		return (a.matchEnd - a.matchStart) > (b.matchEnd - b.matchStart)
+	})
 
 	for _, r := range ws.toRedact {
 		overlap := false
@@ -597,7 +584,9 @@ func RedactBytesToWriter(w io.Writer, raw []byte, trie *Trie) {
 		}
 	}
 
-	sort.Sort(byStart(ws.resolved))
+	sort.Slice(ws.resolved, func(i, j int) bool {
+		return ws.resolved[i].start < ws.resolved[j].start
+	})
 
 	if len(ws.resolved) > 0 {
 		ws.filtered = append(ws.filtered, ws.resolved[0])

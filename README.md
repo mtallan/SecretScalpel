@@ -30,13 +30,13 @@ For patterns that genuinely require regex — URL basic auth, database connectio
 
 Benchmarked on an i9-13900K (24 cores):
 
-| Scenario | Throughput |
-|---|---|
-| Realistic JSON log data (1 secret per 20 lines) | **~1020 MB/s** |
-| Realistic JSON log data (Single Core) | **~64 MB/s** |
-| Worst case (raw logs, secrets on ~80% of lines) | ~4 MB/s |
+| Scenario | Throughput (Bytes) | Network Equiv (Bits) |
+|---|---|---|
+| Realistic JSON log data (1 secret per 20 lines) | **~1020 MB/s** | **~8.2 Gbps** |
+| Realistic JSON log data (Single Core) | **~64 MB/s** | **~512 Mbps** |
+| Worst case (raw logs, secrets on ~80% of lines) | ~4 MB/s | ~32 Mbps |
 
-Realistic throughput on a single machine translates to over **80 TB/day**. Single-core performance is **~64 MB/s**, making it efficient even in resource-constrained sidecar containers.
+Realistic throughput on a single machine translates to over **80 TB/day** (or **~8.2 Gbps** wire speed). Single-core performance is **~64 MB/s** (~512 Mbps), making it efficient even in resource-constrained sidecar containers.
 
 The engine is optimized for the 99% of log lines that *don't* contain secrets. It uses a specialized dictionary lookup (Trie) that is significantly faster than standard Regex. It also employs advanced memory management techniques to minimize CPU usage, ensuring it can run alongside other workloads without impacting performance.
 
