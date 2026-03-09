@@ -1,0 +1,24 @@
+[
+  {
+    "id": "JSON-KEY-SENTINELS",
+    "type": "json_key",
+    "phrase": [
+      "password",
+      "passwd",
+      "pwd",
+      "secret",
+      "token",
+      "apikey",
+      "api_key",
+      "credential",
+      "credentials",
+      "access_token",
+      "refresh_token",
+      "auth_token",
+      "private_key",
+      "client_secret"
+    ],
+    "enabled": true,
+    "priority": 0
+  }
+]

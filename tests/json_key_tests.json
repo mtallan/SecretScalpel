@@ -1,0 +1,112 @@
+[
+  {
+    "id": "JSON-KEY-PASSWORD",
+    "input": "{\"password\": \"MySecret\"}",
+    "expected": "{\"password\": \"********\"}"
+  },
+  {
+    "id": "JSON-KEY-SECRET",
+    "input": "{\"secret\": \"MySecret\"}",
+    "expected": "{\"secret\": \"********\"}"
+  },
+  {
+    "id": "JSON-KEY-TOKEN",
+    "input": "{\"token\": \"abc123xyz\"}",
+    "expected": "{\"token\": \"*********\"}"
+  },
+  {
+    "id": "JSON-KEY-APIKEY",
+    "input": "{\"apikey\": \"abc123xyz\"}",
+    "expected": "{\"apikey\": \"*********\"}"
+  },
+  {
+    "id": "JSON-KEY-API-KEY",
+    "input": "{\"api_key\": \"abc123xyz\"}",
+    "expected": "{\"api_key\": \"*********\"}"
+  },
+  {
+    "id": "JSON-KEY-CREDENTIAL",
+    "input": "{\"credential\": \"abc123xyz\"}",
+    "expected": "{\"credential\": \"*********\"}"
+  },
+  {
+    "id": "JSON-KEY-CREDENTIALS",
+    "input": "{\"credentials\": \"abc123xyz\"}",
+    "expected": "{\"credentials\": \"*********\"}"
+  },
+  {
+    "id": "JSON-KEY-PWD",
+    "input": "{\"pwd\": \"MySecret\"}",
+    "expected": "{\"pwd\": \"********\"}"
+  },
+  {
+    "id": "JSON-KEY-PASSWD",
+    "input": "{\"passwd\": \"MySecret\"}",
+    "expected": "{\"passwd\": \"********\"}"
+  },
+  {
+    "id": "JSON-KEY-ACCESS-TOKEN",
+    "input": "{\"access_token\": \"abc123xyz\"}",
+    "expected": "{\"access_token\": \"*********\"}"
+  },
+  {
+    "id": "JSON-KEY-REFRESH-TOKEN",
+    "input": "{\"refresh_token\": \"abc123xyz\"}",
+    "expected": "{\"refresh_token\": \"*********\"}"
+  },
+  {
+    "id": "JSON-KEY-AUTH-TOKEN",
+    "input": "{\"auth_token\": \"abc123xyz\"}",
+    "expected": "{\"auth_token\": \"*********\"}"
+  },
+  {
+    "id": "JSON-KEY-PRIVATE-KEY",
+    "input": "{\"private_key\": \"abc123xyz\"}",
+    "expected": "{\"private_key\": \"*********\"}"
+  },
+  {
+    "id": "JSON-KEY-CLIENT-SECRET",
+    "input": "{\"client_secret\": \"abc123xyz\"}",
+    "expected": "{\"client_secret\": \"*********\"}"
+  },
+  {
+    "id": "JSON-KEY-CASE-INSENSITIVE-PASSWORD",
+    "input": "{\"Password\": \"MySecret\"}",
+    "expected": "{\"Password\": \"********\"}"
+  },
+  {
+    "id": "JSON-KEY-CASE-INSENSITIVE-TOKEN",
+    "input": "{\"TOKEN\": \"abc123xyz\"}",
+    "expected": "{\"TOKEN\": \"*********\"}"
+  },
+  {
+    "id": "JSON-KEY-MIXED-SAFE-AND-SENSITIVE",
+    "input": "{\"username\": \"alice\", \"password\": \"MySecret\", \"host\": \"db.example.com\"}",
+    "expected": "{\"username\": \"alice\", \"password\": \"********\", \"host\": \"db.example.com\"}"
+  },
+  {
+    "id": "JSON-KEY-NESTED-PASSWORD",
+    "input": "{\"db\": {\"password\": \"MySecret\"}}",
+    "expected": "{\"db\": {\"password\": \"********\"}}"
+  },
+  {
+    "id": "JSON-KEY-TRIE-VALUE-IN-JSON",
+    "input": "{\"cmd\": \"net user alice S3cr3t!\"}",
+    "expected": "{\"cmd\": \"net user alice *******\"}"
+  },
+  {
+    "id": "JSON-KEY-NEGATIVE-SAFE-KEY",
+    "input": "{\"username\": \"alice\"}",
+    "expected": "{\"username\": \"alice\"}"
+  },
+  {
+    "id": "JSON-KEY-NEGATIVE-EMPTY-VALUE",
+    "input": "{\"password\": \"\"}",
+    "expected": "{\"password\": \"\"}"
+  },
+  {
+    "id": "JSON-KEY-NEGATIVE-NUMERIC-LOOKALIKE",
+    "input": "{\"port\": \"5432\", \"timeout\": \"30\"}",
+    "expected": "{\"port\": \"5432\", \"timeout\": \"30\"}"
+  }
+]

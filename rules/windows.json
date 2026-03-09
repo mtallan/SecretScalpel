@@ -1,0 +1,758 @@
+[
+  {
+    "id": "PHASE0-GENERIC-FLAG-PASSWORD",
+    "comment": "Matches generic password flags like --password=secret, /pass:secret, --pw \"secret\".",
+    "phrase": ["(?i)(?:--|/)(?:password|pass|pwd|pw)[:=]['\"]?([^'\"\\s]+)['\"]?"],
+    "isRegex": true,
+    "priority": 4,
+    "enabled": true,
+    "min_length": 3
+  },
+  {
+    "id": "PHASE0-GENERIC-FLAG-SHORT",
+    "comment": "Matches short, attached password flags like -p:secret or /rp=secret.",
+    "phrase": ["(?i)(?:--?|/)(?:p|rp)[=:]([^\\s'\"]+)"],
+    "isRegex": true,
+    "priority": 4,
+    "enabled": true,
+    "min_length": 3
+  },
+  {
+    "id": "PHASE0-IMPACKET-AUTH-IP",
+    "comment": "Matches impacket-style credentials targeting an IP address, e.g., user:pass@10.0.0.1. This is safer than a general-purpose hostname match.",
+    "phrase": ["(?i)(?:[a-zA-Z0-9_.-]+[\\\\/])?[a-zA-Z0-9_.-]+:([^\\s:]+)@(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"],
+    "isRegex": true,
+    "required_byte": "@",
+    "priority": 4,
+    "enabled": true,
+    "min_length": 3
+  },
+  {
+    "id": "PHASE0-IMPACKET-AUTH-HOST",
+    "comment": "Matches impacket-style credentials targeting a single-word hostname (no dots), e.g., user:pass@DC01. This avoids false positives on email addresses.",
+    "phrase": ["(?i)(?:[a-zA-Z0-9_.-]+[\\\\/])?[a-zA-Z0-9_.-]+:([^\\s:]+)@[a-zA-Z0-9_-]+"],
+    "isRegex": true,
+    "required_byte": "@",
+    "priority": 4,
+    "enabled": true,
+    "min_length": 3
+  },
+  {
+    "id": "PHASE0-URI-BASIC-AUTH",
+    "comment": "Matches standard URL basic authentication credentials like https://user:pass@host.",
+    "phrase": ["(?i)https?://[^\\s:]+:([^\\s@:]+)@[^\\s/]+"],
+    "isRegex": true,
+    "required_byte": "@",
+    "priority": 4,
+    "enabled": true,
+    "min_length": 3
+  },
+  {
+    "id": "PHASE0-DB-CONNECTION-STRING",
+    "comment": "Matches database connection string passwords like ;Password=secret; or ;Pwd=secret.",
+    "phrase": ["(?i);(?:Password|Pwd)\\s*=\\s*([^;\"']+)"],
+    "isRegex": true,
+    "required_byte": ";",
+    "priority": 4,
+    "enabled": true,
+    "min_length": 3
+  },
+  {
+    "id": "PS-ENV-VAR-ASSIGNMENT",
+    "comment": "Matches PowerShell environment variable assignments like $env:PASSWORD = secret. Token sequence: <$env:VAR> <=> <value>.",
+    "phrase": ["<any:(?i)\\$env:(?:password|pass|pwd|secret|token|apikey|cred)>", "=", "<REDACT>"],
+    "priority": 3,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "WIN-ECHO-PIPE-RUNAS",
+    "phrase": [
+      "echo",
+      "<REDACT>",
+      "|",
+      "runas"
+    ],
+    "priority": 0,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "NET-USE-TARGET-PASS",
+    "phrase": [
+      "net",
+      "use",
+      "<any:^[\\\\/]+.*>",
+      "<REDACT>"
+    ],
+    "priority": 4,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "NET-USE-TARGET-PASS-DOMAIN",
+    "phrase": [
+      "net",
+      "use",
+      "<any:^[\\\\/]+.*>",
+      "<REDACT>",
+      "domain"
+    ],
+    "priority": 3,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "NET-USE-DRIVE-PASS",
+    "phrase": [
+      "net",
+      "use",
+      "<any:^[a-zA-Z]:$>",
+      "<any:^[\\\\/]+.*>",
+      "<any>",
+      "<REDACT>"
+    ],
+    "priority": 2,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "NET-USE-DRIVE-PASS-DOMAIN",
+    "phrase": [
+      "net",
+      "use",
+      "<any:^[a-zA-Z]:$>",
+      "<any:^[\\\\/]+.*>",
+      "<any>",
+      "<REDACT>",
+      "domain"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "NET-USE-INLINE",
+    "phrase": [
+      "net",
+      "use",
+      "<any:^[A-Za-z]:$>",
+      "<any:^\\\\\\\\.*>",
+      "<any>",
+      "<REDACT>"
+    ],
+    "priority": 2,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "NET-USE-INLINE-DOMAIN",
+    "phrase": [
+      "net",
+      "use",
+      "<any:^[A-Za-z]:$>",
+      "<any:^\\\\\\\\.*>",
+      "<any>",
+      "<REDACT>",
+      "domain"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "NET-USE-INLINE-SINGLE",
+    "phrase": [
+      "net",
+      "use",
+      "<any:^[A-Za-z]:$>",
+      "<any:^\\\\.*>",
+      "<any>",
+      "<REDACT>"
+    ],
+    "priority": 2,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "NET-USER-DOMAIN",
+    "phrase": [
+      "net",
+      "user",
+      "<any>",
+      "<REDACT>",
+      "domain"
+    ],
+    "priority": 2,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "NET-USER-DOMAIN-SLASH",
+    "phrase": [
+      "net",
+      "user",
+      "<any>",
+      "<REDACT>",
+      "/domain"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "NET-USER-ADD",
+    "phrase": [
+      "net",
+      "user",
+      "<any>",
+      "<REDACT>",
+      "/add"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "WIN-PSEXEC",
+    "phrase": [
+      "psexec",
+      "<any>",
+      "u",
+      "<any>",
+      "p",
+      "<REDACT>"
+    ],
+    "priority": 2,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "WIN-PSEXEC-SEPARATED",
+    "phrase": [
+      "psexec",
+      "<any>",
+      "-u",
+      "<any>",
+      "-p",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "WIN-PSEXEC-SEPARATED-CMD",
+    "phrase": [
+      "psexec",
+      "<any>",
+      "-u",
+      "<any>",
+      "-p",
+      "<REDACT>",
+      "<any>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "WIN-PSEXEC-NOHOST",
+    "phrase": [
+      "psexec",
+      "-u",
+      "<any>",
+      "-p",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "WIN-PSEXEC-ATTACHED",
+    "phrase": [
+      "psexec",
+      "<any:^-u.+>",
+      "<redact:^-p.+>"
+    ],
+    "redact_after": "-p",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "WIN-PSEXEC64-SEPARATED",
+    "phrase": [
+      "psexec64",
+      "<any>",
+      "-u",
+      "<any>",
+      "-p",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "WIN-PSEXEC64-SEPARATED-CMD",
+    "phrase": [
+      "psexec64",
+      "<any>",
+      "-u",
+      "<any>",
+      "-p",
+      "<REDACT>",
+      "<any>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "WIN-PSEXEC64-NOHOST",
+    "phrase": [
+      "psexec64",
+      "-u",
+      "<any>",
+      "-p",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "WIN-PSEXEC64-ATTACHED",
+    "phrase": [
+      "psexec64",
+      "<any:^-u.+>",
+      "<redact:^-p.+>"
+    ],
+    "redact_after": "-p",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "WIN-PSEXEC-EXE-SEPARATED",
+    "phrase": [
+      "psexec.exe",
+      "<any>",
+      "-u",
+      "<any>",
+      "-p",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "WIN-PSEXEC64-EXE-SEPARATED",
+    "phrase": [
+      "psexec64.exe",
+      "<any>",
+      "-u",
+      "<any>",
+      "-p",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "WIN-PSEXEC64-EXE-ATTACHED",
+    "phrase": [
+      "psexec64.exe",
+      "<any:^-u.+>",
+      "<redact:^-p.+>"
+    ],
+    "redact_after": "-p",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "WIN-SQLCMD",
+    "comment": "Hardened: proper -u/-p flag form. Priority 1.",
+    "phrase": [
+      "sqlcmd",
+      "-u",
+      "<any>",
+      "-p",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "WIN-SQLCMD-UPPER",
+    "comment": "Real sqlcmd default flag casing: -U (username) -P (password).",
+    "phrase": [
+      "sqlcmd",
+      "-U",
+      "<any>",
+      "-P",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "WIN-SQLCMD-LEGACY",
+    "comment": "Legacy bare-token form seen in some log processors that strip flag dashes. Lower priority than the flagged forms.",
+    "phrase": [
+      "sqlcmd",
+      "u",
+      "<any>",
+      "p",
+      "<REDACT>"
+    ],
+    "priority": 2,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "WIN-WMIC",
+    "phrase": [
+      "wmic",
+      "node",
+      "<any>",
+      "user",
+      "<any>",
+      "password",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "WIN-CERTUTIL",
+    "comment": "Hardened: real certutil password flag is -p or /p. Priority 1.",
+    "phrase": [
+      "<any:^certutil(\\.exe)?$>",
+      "<any:^[-/]p$>",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "WIN-CERTUTIL-LEGACY",
+    "comment": "Legacy bare 'p' token seen in log processors that strip flag prefixes. Lower priority than the flagged form.",
+    "phrase": [
+      "<any:^certutil(\\.exe)?$>",
+      "p",
+      "<REDACT>"
+    ],
+    "priority": 2,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "WIN-CMDKEY-GENERIC",
+    "phrase": [
+      "cmdkey",
+      "target",
+      "user",
+      "<any>",
+      "pass",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "WIN-CMDKEY-ATTACHED",
+    "phrase": [
+      "cmdkey",
+      "<any>",
+      "<any>",
+      "<redact:^/pass:.*>"
+    ],
+    "redact_after": "/pass:",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "WIN-SCHTASKS",
+    "phrase": [
+      "schtasks",
+      "/change",
+      "/ru",
+      "<any>",
+      "/rp",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "WIN-APPCMD",
+    "phrase": [
+      "appcmd",
+      "set",
+      "config",
+      "username",
+      "<any>",
+      "password",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "WIN-AZ-LOGIN",
+    "phrase": [
+      "az",
+      "login",
+      "--username",
+      "<any>",
+      "--password",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "WIN-RASDIAL",
+    "phrase": [
+      "rasdial",
+      "<any>",
+      "<any>",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "WIN-DSMOD",
+    "phrase": [
+      "dsmod",
+      "user",
+      "<any>",
+      "-pwd",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "WIN-SC-CREATE",
+    "phrase": [
+      "sc",
+      "create",
+      "<any>",
+      "binpath=",
+      "<any>",
+      "-user",
+      "<any>",
+      "-password",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "WIN-BITSADMIN",
+    "phrase": [
+      "bitsadmin",
+      "/setcredentials",
+      "<any>",
+      "server",
+      "basic",
+      "<any>",
+      "<REDACT>"
+    ],
+    "priority": 2,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "WIN-MSTSC",
+    "phrase": [
+      "mstsc",
+      "<any>",
+      "<any>",
+      "<redact:^/password:.*>"
+    ],
+    "redact_after": "/password:",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "WIN-NETDOM",
+    "phrase": [
+      "netdom",
+      "resetpwd",
+      "<any>",
+      "<any>",
+      "<redact:^/passwordd:.*>"
+    ],
+    "redact_after": "/passwordd:",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "WIN-NETSH-WLAN",
+    "phrase": [
+      "netsh",
+      "wlan",
+      "set",
+      "profileparameter",
+      "name=",
+      "<any>",
+      "<redact:^keymaterial=.*>"
+    ],
+    "redact_after": "keymaterial=",
+    "priority": 2,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "WIN-MOUNT-NFS",
+    "phrase": [
+      "mount",
+      "<any>",
+      "<redact:.*pass=.*>",
+      "<any>",
+      "<any>"
+    ],
+    "redact_after": "pass=",
+    "priority": 2,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "PS-SECURESTRING",
+    "phrase": [
+      "convertto-securestring",
+      "-string",
+      "<REDACT>",
+      "-asplaintext",
+      "-force"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "PS-SET-LOCALUSER",
+    "phrase": [
+      "powershell",
+      "set-localuser",
+      "-name",
+      "<any>",
+      "-password",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "PS-AD-PASSWORD",
+    "phrase": [
+      "set-adaccountpassword",
+      "-identity",
+      "<any>",
+      "-newpassword",
+      "<REDACT>"
+    ],
+    "priority": 2,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "WIN-PSEXEC-P-ONLY",
+    "phrase": [
+      "psexec",
+      "-p",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "NET-USER-SET",
+    "comment": "Hardened: 4th token must not start with / or - (flags like /active:yes, /delete, /expires). This rule is intentionally broad to catch passwords set without flags, accepting a minor risk of false positives on prose.",
+    "phrase": [
+      "net",
+      "user",
+      "<any>",
+      "<redact:^[^/-].*>"
+    ],
+    "priority": 3,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "WIN-PSEXEC-P-ONLY-HOST",
+    "phrase": [
+      "psexec",
+      "<any>",
+      "-p",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "WIN-PSEXEC64-P-ONLY",
+    "phrase": [
+      "psexec64",
+      "-p",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "WIN-PSEXEC64-P-ONLY-HOST",
+    "phrase": [
+      "psexec64",
+      "<any>",
+      "-p",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  }
+,
+  {
+    "id": "WIN-WINRS-SEPARATED",
+    "comment": "Matches Windows Remote Shell (winrs) with a separated password flag.",
+    "phrase": [
+      "<any:^winrs(\\.exe)?$>",
+      "<any>",
+      "-u",
+      "<any>",
+      "-p",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  }
+]

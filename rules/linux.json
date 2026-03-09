@@ -1,0 +1,269 @@
+[
+  {
+    "id": "LNX-SUDO-S-PIPE",
+    "phrase": [
+      "echo",
+      "<REDACT>",
+      "|",
+      "sudo",
+      "-S"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "LNX-DOCKER-LOGIN",
+    "phrase": [
+      "docker",
+      "login",
+      "<any>",
+      "<any>",
+      "--password",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "LNX-DOCKER-LOGIN-SHORT",
+    "phrase": [
+      "docker",
+      "login",
+      "<any>",
+      "<any>",
+      "-p",
+      "<redact:^[^-].*>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "LNX-MYSQL-P-SEPARATED",
+    "phrase": [
+      "mysql",
+      "-u",
+      "<any>",
+      "-p",
+      "<redact:^[^-].*>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "LNX-MYSQL-PASSWORD",
+    "phrase": [
+      "mysql",
+      "-u",
+      "<any>",
+      "--password",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "LNX-MYSQL-P-ATTACHED",
+    "comment": "Handles mysql -u root -pPassword123 where -p and password are a single token with no space.",
+    "phrase": [
+      "mysql",
+      "-u",
+      "<any>",
+      "<redact:^-p.+>"
+    ],
+    "redact_after": "-p",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "LNX-MYSQLDUMP-P",
+    "phrase": [
+      "mysqldump",
+      "-u",
+      "<any>",
+      "-p",
+      "<redact:^[^-].*>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "LNX-MYSQLDUMP-PASSWORD",
+    "phrase": [
+      "mysqldump",
+      "-u",
+      "<any>",
+      "--password",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "LNX-MYSQLDUMP-P-ATTACHED",
+    "comment": "Handles mysqldump -u root -pPassword123 attached form.",
+    "phrase": [
+      "mysqldump",
+      "-u",
+      "<any>",
+      "<redact:^-p.+>"
+    ],
+    "redact_after": "-p",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "LNX-PSQL-PASSWORD",
+    "phrase": [
+      "psql",
+      "-U",
+      "<any>",
+      "-W",
+      "<redact:^[^-].*>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "LNX-PSQL-PASSWORD-LONG",
+    "phrase": [
+      "psql",
+      "--username",
+      "<any>",
+      "--password",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "LNX-MONGODUMP-P",
+    "phrase": [
+      "mongodump",
+      "--password",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "LNX-MONGORESTORE-P",
+    "phrase": [
+      "mongorestore",
+      "--password",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "LNX-REDIS-CLI",
+    "phrase": [
+      "redis-cli",
+      "-a",
+      "<redact:^[^-].*>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "LNX-WGET-PASSWORD",
+    "phrase": [
+      "wget",
+      "--password",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "LNX-WGET-HTTP-PASSWORD",
+    "phrase": [
+      "wget",
+      "--http-password",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "LNX-SSH-PASS",
+    "phrase": [
+      "sshpass",
+      "-p",
+      "<redact:^[^-].*>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "LNX-FTP-PASS",
+    "comment": "4th token must not start with - or / (flags/options) and must not be a bare number (port), preventing 'ftp -n host 21' from redacting the port.",
+    "phrase": [
+      "ftp",
+      "<any>",
+      "<any>",
+      "<redact:^[^-/][^0-9].*|^[^-/0-9].+>"
+    ],
+    "priority": 2,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "LNX-OPENSSL-PASS",
+    "comment": "pass:secret is a single token. '<redact:^pass:.+>' matches it; redact_after trims the 'pass:' prefix so only the secret is starred.",
+    "phrase": ["-passin", "<redact:^pass:.+>"],
+    "redact_after": "pass:",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "LNX-OPENSSL-PASSOUT",
+    "comment": "Same as LNX-OPENSSL-PASS but for -passout.",
+    "phrase": ["-passout", "<redact:^pass:.+>"],
+    "redact_after": "pass:",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "LNX-ANSIBLE-VAULT",
+    "phrase": [
+      "ansible-vault",
+      "<any>",
+      "--vault-password-file",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "LNX-GPUPDATE-P",
+    "phrase": [
+      "gpupdate",
+      "-p",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 5
+  }
+]

@@ -1,0 +1,9 @@
+.git
+*.out
+*.test
+redactbox
+secretscalpel
+tests
+README.md
+CLAUDE.md
+logo.png

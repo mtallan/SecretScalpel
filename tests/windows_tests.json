@@ -1,0 +1,317 @@
+[
+  {
+    "id": "WIN-NET-USER-DOMAIN",
+    "input": "net user bob Secret123 domain",
+    "expected": "net user bob ********* domain"
+  },
+  {
+    "id": "WIN-NET-USE-DOMAIN",
+    "input": "net use \\\\srv\\share Pass123 domain",
+    "expected": "net use \\\\srv\\share ******* domain"
+  },
+  {
+    "id": "WIN-CMDKEY-GENERIC",
+    "input": "cmdkey target user bob pass MySecret",
+    "expected": "cmdkey target user bob pass ********"
+  },
+  {
+    "id": "WIN-SCHTASKS-CHANGE-RP",
+    "input": "schtasks /change /ru bob /rp Secret123",
+    "expected": "schtasks /change /ru bob /rp *********"
+  },
+  {
+    "id": "WIN-WMIC-REMOTE",
+    "input": "wmic node 10.0.0.1 user admin password SuperPass",
+    "expected": "wmic node 10.0.0.1 user admin password *********"
+  },
+  {
+    "id": "WIN-CERTUTIL-P",
+    "input": "certutil p MyPfxPassword",
+    "expected": "certutil p *************"
+  },
+  {
+    "id": "WIN-PSEXEC-P",
+    "input": "psexec \\\\host u bob p MySecret cmd",
+    "expected": "psexec \\\\host u bob p ******** cmd"
+  },
+  {
+    "id": "WIN-SQLCMD-P",
+    "input": "sqlcmd u sa p MySecret",
+    "expected": "sqlcmd u sa p ********"
+  },
+  {
+    "id": "WIN-APPCMD-PASSWORD",
+    "input": "appcmd set config username admin password SuperSecret",
+    "expected": "appcmd set config username admin password ***********"
+  },
+  {
+    "id": "WIN-AZ-LOGIN-PASSWORD",
+    "input": "az login --username bob --password Secret123",
+    "expected": "az login --username bob --password *********"
+  },
+  {
+    "id": "WIN-POWERSHELL-SECURESTRING",
+    "input": "convertto-securestring -string MySecret -asplaintext -force",
+    "expected": "convertto-securestring -string ******** -asplaintext -force"
+  },
+  {
+    "id": "NEGATIVE-TEST-2",
+    "input": "The net use command connects to a shared resource.",
+    "expected": "The net use command connects to a shared resource."
+  },
+  {
+    "id": "net-user-set-password-basic",
+    "input": "net user alice S3cr3t!",
+    "expected": "net user alice *******"
+  },
+  {
+    "id": "net-user-set-password-domain",
+    "input": "net user alice S3cr3t! /domain",
+    "expected": "net user alice ******* /domain"
+  },
+  {
+    "id": "net-user-add-with-password",
+    "input": "net user bob P@ssw0rd /add",
+    "expected": "net user bob ******** /add"
+  },
+  {
+    "id": "net-user-json-log-password",
+    "input": "{\"cmd\":\"net user alice S3cr3t!\"}",
+    "expected": "{\"cmd\":\"net user alice *******\"}"
+  },
+  {
+    "id": "net-use-inline-password",
+    "input": "net use Z: \\fileserver\\share alice P@ssw0rd",
+    "expected": "net use Z: \\fileserver\\share alice ********"
+  },
+  {
+    "id": "net-use-inline-password-domain",
+    "input": "net use Z: \\\\fileserver\\share alice P@ssw0rd domain",
+    "expected": "net use Z: \\\\fileserver\\share alice ******** domain"
+  },
+  {
+    "id": "net-use-json-log-password",
+    "input": "{\"cmd\":\"net use Z: \\\\srv\\share alice P@ssw0rd\"}",
+    "expected": "{\"cmd\":\"net use Z: \\\\srv\\share alice ********\"}"
+  },
+  {
+    "id": "cmdkey-generic-cred-password",
+    "input": "cmdkey /generic:TERMSRV/server /user:alice /pass:MyP@ss!",
+    "expected": "cmdkey /generic:TERMSRV/server /user:alice /pass:*******"
+  },
+  {
+    "id": "cmdkey-target-cred-password",
+    "input": "cmdkey /add:server /user:alice /pass:MyP@ss!",
+    "expected": "cmdkey /add:server /user:alice /pass:*******"
+  },
+  {
+    "id": "psexec-p-attached",
+    "input": "psexec -uDOMAIN\\alice -pMyP@ss! \\\\server cmd.exe",
+    "expected": "psexec -uDOMAIN\\alice -p******* \\\\server cmd.exe"
+  },
+  {
+    "id": "psexec-p-separated",
+    "input": "psexec -u DOMAIN\\alice -p MyP@ss! \\\\server cmd.exe",
+    "expected": "psexec -u DOMAIN\\alice -p ******* \\\\server cmd.exe"
+  },
+  {
+    "id": "sc-create-service-password",
+    "input": "sc create MySvc binPath= \"C:\\svc.exe -user alice -password MyP@ss!\"",
+    "expected": "sc create MySvc binPath= \"C:\\svc.exe -user alice -password *******\""
+  },
+  {
+    "id": "rasdial-inline-password",
+    "input": "rasdial MyVPN alice MyP@ss!",
+    "expected": "rasdial MyVPN alice *******"
+  },
+  {
+    "id": "mstsc-password-flag",
+    "input": "mstsc /v:server /admin /password:MyP@ss!",
+    "expected": "mstsc /v:server /admin /password:*******"
+  },
+  {
+    "id": "netdom-resetpwd-password",
+    "input": "netdom resetpwd /server:DC1 /userd:DOMAIN\\alice /passwordd:MyP@ss!",
+    "expected": "netdom resetpwd /server:DC1 /userd:DOMAIN\\alice /passwordd:*******"
+  },
+  {
+    "id": "dsmod-user-pwd",
+    "input": "dsmod user \"CN=Alice,DC=example,DC=com\" -pwd MyP@ss!",
+    "expected": "dsmod user \"CN=Alice,DC=example,DC=com\" -pwd *******"
+  },
+  {
+    "id": "powershell-set-localuser-password",
+    "input": "powershell Set-LocalUser -Name alice -Password MyP@ss!",
+    "expected": "powershell Set-LocalUser -Name alice -Password *******"
+  },
+  {
+    "id": "powershell-securestring-string",
+    "input": "powershell ConvertTo-SecureString -String MyP@ss! -AsPlainText -Force",
+    "expected": "powershell ConvertTo-SecureString -String ******* -AsPlainText -Force"
+  },
+  {
+    "id": "neg-password-word-only",
+    "input": "this is not a password command, just documentation",
+    "expected": "this is not a password command, just documentation"
+  },
+  {
+    "id": "PHASE0-IMPACKET-EXEC",
+    "input": "python psexec.py CORP/svc_account:P@ssw0rd123!@10.0.0.5",
+    "expected": "python psexec.py CORP/svc_account:************@10.0.0.5"
+  },
+  {
+    "id": "PHASE0-URI-BASIC-AUTH-WGET",
+    "input": "wget https://admin:SuperSecret!@internal-api.corp.local/config.json",
+    "expected": "wget https://admin:************@internal-api.corp.local/config.json"
+  },
+  {
+    "id": "PHASE0-DB-CONNECTION-STRING",
+    "input": "Server=tcp:prod.db.windows.net,1433;User ID=dbadmin;Password=ComplexP@ssw0rd!;Encrypt=True;",
+    "expected": "Server=tcp:prod.db.windows.net,1433;User ID=dbadmin;Password=****************;Encrypt=True;"
+  },
+  {
+    "id": "PS-ENV-VAR-ASSIGNMENT",
+    "input": "$env:PASSWORD = SuperSecret123",
+    "expected": "$env:PASSWORD = **************"
+  },
+  {
+    "id": "WINDOWS-ECHO-PIPE-RUNAS",
+    "input": "echo P@ssw0rd123 | runas /user:DOMAIN\\admin cmd.exe",
+    "expected": "echo *********** | runas /user:DOMAIN\\admin cmd.exe"
+  },
+  {
+    "id": "PHASE0-UNIVERSAL-FLAGS-SINGLEQUOTES",
+    "input": "mysql -u root --password='MyDatabaseSecret!'",
+    "expected": "mysql -u root --password='*****************'"
+  },
+  {
+    "id": "PHASE0-UNIVERSAL-FLAGS-POSITIONAL",
+    "input": "custom-cli.exe /p:MyP@ssword! /silent",
+    "expected": "custom-cli.exe /p:*********** /silent"
+  },
+  {
+    "id": "WIN-NEG-NET-USER-ACTIVE",
+    "input": "net user alice /active:yes",
+    "expected": "net user alice /active:yes"
+  },
+  {
+    "id": "WIN-NEG-NET-USER-DELETE",
+    "input": "net user alice /delete",
+    "expected": "net user alice /delete"
+  },
+  {
+    "id": "WIN-NEG-NET-USER-EXPIRES",
+    "input": "net user alice /expires:01/01/2026",
+    "expected": "net user alice /expires:01/01/2026"
+  },
+  {
+    "id": "WIN-NEG-NET-USER-QUERY",
+    "input": "net user alice",
+    "expected": "net user alice"
+  },
+  {
+    "id": "WIN-NEG-NET-USE-HELP",
+    "input": "net use /help",
+    "expected": "net use /help"
+  },
+  {
+    "id": "WIN-NEG-NET-USE-LIST",
+    "input": "net use",
+    "expected": "net use"
+  },
+  {
+    "id": "WIN-NEG-NET-USE-DELETE",
+    "input": "net use Z: /delete",
+    "expected": "net use Z: /delete"
+  },
+  {
+    "id": "WIN-NEG-RUNAS-NOPROFILE",
+    "input": "runas /noprofile /user:admin notepad.exe",
+    "expected": "runas /noprofile /user:admin notepad.exe"
+  },
+  {
+    "id": "WIN-NEG-RUNAS-ENV",
+    "input": "runas /env /user:DOMAIN\\admin cmd.exe",
+    "expected": "runas /env /user:DOMAIN\\admin cmd.exe"
+  },
+  {
+    "id": "WIN-NEG-RUNAS-SAVECRED",
+    "input": "runas /savecred /user:admin calc.exe",
+    "expected": "runas /savecred /user:admin calc.exe"
+  },
+  {
+    "id": "WIN-NEG-PSEXEC-NO-PASS",
+    "input": "psexec \\\\host cmd.exe",
+    "expected": "psexec \\\\host cmd.exe"
+  },
+  {
+    "id": "WIN-NEG-PSEXEC-HELP",
+    "input": "psexec -h",
+    "expected": "psexec -h"
+  },
+  {
+    "id": "WIN-NEG-CERTUTIL-HASH",
+    "input": "certutil -hashfile C:\\file.exe SHA256",
+    "expected": "certutil -hashfile C:\\file.exe SHA256"
+  },
+  {
+    "id": "WIN-NEG-CERTUTIL-DECODE",
+    "input": "certutil -decode encoded.b64 decoded.bin",
+    "expected": "certutil -decode encoded.b64 decoded.bin"
+  },
+  {
+    "id": "WIN-NEG-CERTUTIL-VERIFY",
+    "input": "certutil -verify cert.cer",
+    "expected": "certutil -verify cert.cer"
+  },
+  {
+    "id": "WIN-NEG-SQLCMD-TRUSTED",
+    "input": "sqlcmd -S localhost -E -Q \"SELECT 1\"",
+    "expected": "sqlcmd -S localhost -E -Q \"SELECT 1\""
+  },
+  {
+    "id": "WIN-NEG-SCHTASKS-QUERY",
+    "input": "schtasks /query /fo LIST /v",
+    "expected": "schtasks /query /fo LIST /v"
+  },
+  {
+    "id": "WIN-NEG-SCHTASKS-DELETE",
+    "input": "schtasks /delete /tn MyTask /f",
+    "expected": "schtasks /delete /tn MyTask /f"
+  },
+  {
+    "id": "WIN-NEG-RASDIAL-DISCONNECT",
+    "input": "rasdial MyVPN /disconnect",
+    "expected": "rasdial MyVPN /disconnect"
+  },
+  {
+    "id": "WIN-NEG-RASDIAL-TWO-ARGS",
+    "input": "rasdial MyVPN username",
+    "expected": "rasdial MyVPN username"
+  },
+  {
+    "id": "WIN-NEG-PROSE-NET-USER",
+    "input": "the Windows net command includes user, use, and share subcommands",
+    "expected": "the Windows net command includes user, use, and share subcommands"
+  },
+  {
+    "id": "WIN-NEG-PROSE-RUNAS",
+    "input": "elevation can be achieved via runas",
+    "expected": "elevation can be achieved via runas"
+  },
+  {
+    "id": "WIN-NEG-PROSE-PSEXEC",
+    "input": "psexec requires administrator privileges to run remote commands",
+    "expected": "psexec requires administrator privileges to run remote commands"
+  },
+  {
+    "id": "WIN-NEG-PROSE-PASSWORD-WORD",
+    "input": "Please enter your password in the dialog box",
+    "expected": "Please enter your password in the dialog box"
+  },
+  {
+    "id": "WIN-NEG-PROSE-NET-USER-ADD",
+    "input": "The net user command can /add a new user.",
+    "expected": "The net user command can /add a new user."
+  }
+]

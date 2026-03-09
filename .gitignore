@@ -1,0 +1,8 @@
+mem.out
+cpu.out
+*.out
+redactbox
+redactor.test
+*.test
+secretscalpel
+CLAUDE.md
