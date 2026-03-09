@@ -1,3 +1,3 @@
-module github.com/anhedonia801/SecretScalpel
+module github.com/mtallan/SecretScalpel
 
 go 1.25.0

@@ -14,7 +14,7 @@ import (
 	"sync/atomic"
 	"syscall"
 
-	"github.com/anhedonia801/SecretScalpel/redactor"
+	"github.com/mtallan/SecretScalpel/redactor"
 )
 
 const Version = "v0.1.0"
