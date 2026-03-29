@@ -18,7 +18,10 @@ jobs:
         go-version: '1.22'
 
     - name: Run Tests
-      run: make test
+      run: go test -race ./redactor/...
 
     - name: Build Binary
       run: make build
+
+    - name: E2E Tests
+      run: make e2e
