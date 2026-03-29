@@ -26,6 +26,8 @@ matches `psexec -u admin -p SuperSecret!` and redacts only the password token, l
 
 For patterns that genuinely require regex — URL basic auth, database connection strings, attached flag syntax — a small set of regex rules runs as a fallback. Everything else goes through the trie.
 
+Each input line is inspected independently. Lines starting with `{` are processed as JSON (string values walked, structure preserved); all other lines are processed as flat text. No mode flag required.
+
 ## Performance
 
 Benchmarked on an i9-13900K (24 cores):
@@ -51,13 +53,11 @@ Rules are plain JSON. They live in the `rules/` directory and are loaded at star
   {
     "id": "WIN-NET-USE",
     "phrase": ["net", "use", "<any:^[\\\\/]+.*>", "<REDACT>"],
-    "priority": 4,
     "enabled": true
   },
   {
     "id": "WIN-PSEXEC-SEPARATED",
     "phrase": ["psexec", "-u", "<any>", "-p", "<REDACT>"],
-    "priority": 1,
     "enabled": true
   }
 ]
@@ -115,6 +115,11 @@ SecretScalpel ships with rules covering common credential exposure patterns:
 - `plink` (PuTTY Link) `-pw` password flag
 - JSON sensitive key redaction (API keys, tokens, secrets in structured logs)
 
+**Generic patterns:**
+- JWT tokens (bearer headers and `token=` assignments)
+- PEM private keys (RSA, EC, OpenSSH, DSA)
+- AWS access key IDs (`AKIA*`, `ASIA*`, `AROA*`)
+
 ## Usage
 
 ### CLI
@@ -123,54 +128,38 @@ SecretScalpel ships with rules covering common credential exposure patterns:
 # Redact raw log lines from stdin
 echo 'psexec -u admin -p SuperSecret! cmd.exe' | secretscalpel
 
-# Redact JSON log data, preserving structure
-echo '{"log": "net use Z: \\server P@ssword domain"}' | secretscalpel -json
+# Redact JSON log data — auto-detected, structure preserved
+echo '{"log": "net use Z: \\server P@ssword domain"}' | secretscalpel
+
+# Mixed stream — each line handled independently
+cat app.log | secretscalpel
+
+# Use a custom redaction string
+echo 'psexec -u admin -p SuperSecret! cmd.exe' | secretscalpel --mask '[REDACTED]'
+
+# Show which rule matched (useful when writing or debugging rules)
+echo 'psexec -u admin -p SuperSecret! cmd.exe' | secretscalpel --debug-rules
 
 # Validate rule files (useful in CI before deploy)
-secretscalpel -validate-rules
-
-# Print version
-secretscalpel -version
+secretscalpel --validate-rules
 
 # Health check (load rules, print OK, exit 0)
-secretscalpel -health
+secretscalpel --health
+
+# Print version
+secretscalpel --version
 ```
 
 **Flags:**
 
-| Flag | Env var | Default | Description |
-|------|---------|---------|-------------|
-| `-rules` | `SECRETSCALPEL_RULES_DIR` | `./rules` | Path to rules directory |
-| `-json` | `SECRETSCALPEL_JSON_MODE` | `false` | JSON mode — walks string values only |
-| `-workers` | `SECRETSCALPEL_WORKERS` | NumCPU | Worker goroutine count |
-| `-mask` | `SECRETSCALPEL_MASK` | `*` | Redaction mask character(s) |
-| `-fail-open` | `SECRETSCALPEL_FAIL_OPEN` | `false` | Pass input through unredacted on error |
-| `-admin-addr` | `SECRETSCALPEL_ADMIN_ADDR` | `""` | HTTP admin server address (e.g. `:9090`) |
-| `-validate-rules` | — | — | Validate rule files and exit (0=ok, 1=error) |
-| `-health` | — | — | Verify rules load, print OK, exit 0 |
-| `-version` | — | — | Print version and exit |
-
-### Admin HTTP server
-
-When `-admin-addr` is set, an HTTP server exposes:
-
-- `GET /health` — returns `{"status":"ok","version":"..."}` always
-- `GET /ready` — returns `{"status":"ready","rules":N}` or 503 if no rules are loaded
-- `GET /metrics` — Prometheus text exposition with counters:
-  - `secretscalpel_chunks_processed_total`
-  - `secretscalpel_bytes_in_total`
-  - `secretscalpel_lines_dropped_total`
-  - `secretscalpel_worker_panics_total`
-  - `secretscalpel_write_errors_total`
-  - `secretscalpel_redactions_applied_total`
-
-### Hot reload
-
-Send `SIGHUP` to reload rules from disk without restarting the process. In-flight chunks continue with the old trie; new chunks pick up the updated rules atomically.
-
-```bash
-kill -HUP $(pidof secretscalpel)
-```
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-rules` | `./rules` | Path to rules directory |
+| `-mask` | `*` | Redaction mask character(s) |
+| `-debug-rules` | `false` | Replace redacted values with `[RULE-ID]` to show which rule matched |
+| `-validate-rules` | — | Validate rule files and exit (0=ok, 1=error) |
+| `-health` | — | Verify rules load, print OK, exit 0 |
+| `-version` | — | Print version and exit |
 
 ### Docker
 
@@ -187,31 +176,30 @@ cat app.log | docker run -i --rm -v /my/rules:/rules secretscalpel -rules /rules
 ### As a library
 
 ```go
-import "secretscalpel/redactor"
+import "github.com/mtallan/SecretScalpel/redactor"
 
 trie := redactor.NewTrie("*", 0, 0)
 redactor.LoadRulesFromDir("./rules", trie)
 
 // Redact a raw log line
-redacted := redactor.RedactBytes([]byte(line), trie)
+var buf bytes.Buffer
+redactor.RedactBytesToWriter(&buf, []byte(line), trie)
 
 // Redact JSON log data while preserving structure
 redacted := redactor.RedactAllJSONStrings([]byte(jsonLine), trie)
 
-// Stream processing with parallel workers and context cancellation
-var triePtr atomic.Pointer[redactor.Trie]
-triePtr.Store(trie)
-err := redactor.ProcessStream(ctx, reader, writer, &triePtr, isJSON, 0) // 0 = NumCPU
+// Stream processing with parallel workers
+err := redactor.ProcessStream(os.Stdin, os.Stdout, trie, 0) // 0 = NumCPU
 ```
 
-### JSON vs Raw mode
+### Auto-detect mode
 
-SecretScalpel has two processing modes:
+SecretScalpel inspects each line independently:
 
-- **Raw mode** (`RedactBytes`) — processes the entire input as a flat byte stream. Use for plaintext logs, syslog, CEF format.
-- **JSON mode** (`RedactAllJSONStrings`) — walks JSON string values only, leaving keys and structure intact. Use for structured JSON logs (Elastic, Splunk JSON, etc.). Output remains valid, parseable JSON.
+- Lines starting with `{` → **JSON mode** (`RedactAllJSONStrings`) — walks string values only, leaving keys and structure intact. Output remains valid, parseable JSON. Keys listed in `json_keys.json` have their values fully star-redacted regardless of content.
+- All other lines → **Raw mode** (`RedactBytesToWriter`) — processes the line as flat text. Use for plaintext logs, syslog, CEF format.
 
-JSON keys listed in `json_keys.json` have their values fully star-redacted regardless of content.
+This means a mixed stream of raw and JSON lines is handled correctly with no configuration.
 
 ## Limitations
 
@@ -230,20 +218,25 @@ Input stream
      │
      ▼
 ProcessStream (orchestrator)
-     │ chunks input into 256KB batches, fans out to worker pool
+     │ chunks input into 256KB batches aligned on newlines, fans out to worker pool
      ▼
-RedactAllJSONStrings / RedactBytes
+Per-line auto-detect
      │
-     ├── Phase 0: Regex rules (URL auth, connection strings)
-     │   each rule has an optional required_byte guard;
-     │   the rule is skipped entirely if its byte is absent
+     ├── JSON line  → RedactAllJSONStrings
+     │                walks string values, redacts in-place
      │
-     └── Phase 1: Trie engine
-         tokenizes line → sliding window → matches rule phrases
-         redacts matched tokens in-place
+     └── Raw line   → RedactBytesToWriter
+                      │
+                      ├── Phase 0: Regex rules (URL auth, connection strings)
+                      │   each rule has an optional required_byte guard;
+                      │   the rule is skipped entirely if its byte is absent
+                      │
+                      └── Phase 1: Trie engine
+                          tokenizes line → multi-path sliding window → matches rule phrases
+                          redacts matched tokens, resolves overlaps by match span length
 ```
 
-The worker pool dispatches `*atomic.Pointer[Trie]` so rules can be hot-reloaded via SIGHUP with zero downtime. The trie uses a recycled `EngineWorkspace` pool to minimize per-line allocations. On clean lines (no secrets) the input slice is returned without copying.
+The trie uses a recycled `EngineWorkspace` pool to minimize per-line allocations. On clean lines (no secrets) the input slice is returned without copying.
 
 Lines exceeding 1MB are dropped with a warning to prevent unbounded memory growth and pathological regex backtracking.
 
