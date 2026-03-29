@@ -378,5 +378,135 @@
     "id": "mimikatz-ntlm-line",
     "input": "         * NTLM     : 31d6cfe0d16ae931b73c59d7e0c089c0",
     "expected": "         * NTLM     : ********************************"
+  },
+  {
+    "id": "phase0-uri-basic-auth",
+    "input": "connecting to https://user+api:MySecretPass@internal.corp.local/api",
+    "expected": "connecting to https://user+api:************@internal.corp.local/api"
+  },
+  {
+    "id": "net-use-target-pass",
+    "input": "net use \\\\fileserver\\share Password123",
+    "expected": "net use \\\\fileserver\\share ***********"
+  },
+  {
+    "id": "net-use-inline",
+    "input": "net use Z: \\\\\\\\fileserver\\\\share alice Password123",
+    "expected": "net use Z: \\\\\\\\fileserver\\\\share alice ***********"
+  },
+  {
+    "id": "net-use-inline-domain",
+    "input": "net use Z: \\\\\\\\fileserver\\\\share alice Password123 CORP",
+    "expected": "net use Z: \\\\\\\\fileserver\\\\share alice *********** CORP"
+  },
+  {
+    "id": "net-use-inline-single",
+    "input": "net use Z: \\\\fileserver\\\\share alice Password123",
+    "expected": "net use Z: \\\\fileserver\\\\share alice ***********"
+  },
+  {
+    "id": "win-psexec-p-only",
+    "input": "psexec -p MySecret cmd.exe",
+    "expected": "psexec -p ******** cmd.exe"
+  },
+  {
+    "id": "win-psexec-p-only-host",
+    "input": "psexec \\\\server -p MySecret cmd.exe",
+    "expected": "psexec \\\\server -p ******** cmd.exe"
+  },
+  {
+    "id": "win-psexec-separated",
+    "input": "psexec \\\\server -u admin -p MySecret cmd.exe",
+    "expected": "psexec \\\\server -u admin -p ******** cmd.exe"
+  },
+  {
+    "id": "win-psexec-separated-cmd",
+    "input": "psexec \\\\server -u admin -p MySecret /c whoami",
+    "expected": "psexec \\\\server -u admin -p ******** /c whoami"
+  },
+  {
+    "id": "win-psexec-exe-separated",
+    "input": "psexec.exe \\\\server -u admin -p MySecret cmd.exe",
+    "expected": "psexec.exe \\\\server -u admin -p ******** cmd.exe"
+  },
+  {
+    "id": "win-psexec64-p-only",
+    "input": "psexec64 -p MySecret cmd.exe",
+    "expected": "psexec64 -p ******** cmd.exe"
+  },
+  {
+    "id": "win-psexec64-p-only-host",
+    "input": "psexec64 \\\\server -p MySecret cmd.exe",
+    "expected": "psexec64 \\\\server -p ******** cmd.exe"
+  },
+  {
+    "id": "win-psexec64-separated",
+    "input": "psexec64 \\\\server -u admin -p MySecret cmd.exe",
+    "expected": "psexec64 \\\\server -u admin -p ******** cmd.exe"
+  },
+  {
+    "id": "win-psexec64-separated-cmd",
+    "input": "psexec64 \\\\server -u admin -p MySecret /c whoami",
+    "expected": "psexec64 \\\\server -u admin -p ******** /c whoami"
+  },
+  {
+    "id": "win-psexec64-nohost",
+    "input": "psexec64 -u admin -p MySecret cmd.exe",
+    "expected": "psexec64 -u admin -p ******** cmd.exe"
+  },
+  {
+    "id": "win-psexec64-attached",
+    "input": "psexec64 -uadmin -pMySecret cmd.exe",
+    "expected": "psexec64 -uadmin -p******** cmd.exe"
+  },
+  {
+    "id": "win-psexec64-exe-separated",
+    "input": "psexec64.exe \\\\server -u admin -p MySecret cmd.exe",
+    "expected": "psexec64.exe \\\\server -u admin -p ******** cmd.exe"
+  },
+  {
+    "id": "win-psexec64-exe-attached",
+    "input": "psexec64.exe -uadmin -pMySecret cmd.exe",
+    "expected": "psexec64.exe -uadmin -p******** cmd.exe"
+  },
+  {
+    "id": "win-sqlcmd",
+    "input": "sqlcmd -u sa -p MyDbPass123",
+    "expected": "sqlcmd -u sa -p ***********"
+  },
+  {
+    "id": "win-sqlcmd-upper",
+    "input": "sqlcmd -U sa -P MyDbPass123",
+    "expected": "sqlcmd -U sa -P ***********"
+  },
+  {
+    "id": "win-certutil",
+    "input": "certutil -p MyPassword -importpfx cert.pfx",
+    "expected": "certutil -p ********** -importpfx cert.pfx"
+  },
+  {
+    "id": "win-bitsadmin",
+    "input": "bitsadmin /setcredentials myjob server basic myuser MyPassword",
+    "expected": "bitsadmin /setcredentials myjob server basic myuser **********"
+  },
+  {
+    "id": "win-netsh-wlan",
+    "input": "netsh wlan set profileparameter name= MyNetwork keymaterial=WifiPass123",
+    "expected": "netsh wlan set profileparameter name= MyNetwork keymaterial=***********"
+  },
+  {
+    "id": "win-mount-nfs",
+    "input": "mount -o pass=MySecret nfsserver:/share /mnt/data",
+    "expected": "mount -o pass=******** nfsserver:/share /mnt/data"
+  },
+  {
+    "id": "ps-ad-password",
+    "input": "Set-ADAccountPassword -Identity jdoe -NewPassword MyNewPass123",
+    "expected": "Set-ADAccountPassword -Identity jdoe -NewPassword ************"
+  },
+  {
+    "id": "win-winrs-separated",
+    "input": "winrs \\\\server -u admin -p MySecret ipconfig",
+    "expected": "winrs \\\\server -u admin -p ******** ipconfig"
   }
 ]

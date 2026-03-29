@@ -168,5 +168,25 @@
     "id": "LNX-NEG-SUDO-S-STANDALONE",
     "input": "sudo -S apt update",
     "expected": "sudo -S apt update"
+  },
+  {
+    "id": "lnx-mysqldump-p-attached",
+    "input": "mysqldump -u root -pPassword123 mydb",
+    "expected": "mysqldump -u root -p*********** mydb"
+  },
+  {
+    "id": "lnx-ftp-pass",
+    "input": "ftp ftp.example.com username MyPassword",
+    "expected": "ftp ftp.example.com username **********"
+  },
+  {
+    "id": "lnx-ansible-vault",
+    "input": "ansible-vault encrypt --vault-password-file /secret/vault.key playbook.yml",
+    "expected": "ansible-vault encrypt --vault-password-file ***************** playbook.yml"
+  },
+  {
+    "id": "lnx-gpupdate-p",
+    "input": "gpupdate -p MyPassword",
+    "expected": "gpupdate -p **********"
   }
 ]

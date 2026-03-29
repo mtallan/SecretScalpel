@@ -8,7 +8,7 @@
       "sudo",
       "-S"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -22,7 +22,7 @@
       "--password",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -36,7 +36,7 @@
       "-p",
       "<redact:^[^-].*>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -49,7 +49,7 @@
       "-p",
       "<redact:^[^-].*>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -62,7 +62,7 @@
       "--password",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -76,7 +76,7 @@
       "<redact:^-p.+>"
     ],
     "redact_after": "-p",
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -89,7 +89,7 @@
       "-p",
       "<redact:^[^-].*>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -102,7 +102,7 @@
       "--password",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -116,7 +116,7 @@
       "<redact:^-p.+>"
     ],
     "redact_after": "-p",
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -129,7 +129,7 @@
       "-W",
       "<redact:^[^-].*>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -142,7 +142,7 @@
       "--password",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -153,7 +153,7 @@
       "--password",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -164,7 +164,7 @@
       "--password",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -175,7 +175,7 @@
       "-a",
       "<redact:^[^-].*>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -186,7 +186,7 @@
       "--password",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -197,7 +197,7 @@
       "--http-password",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -208,7 +208,7 @@
       "-p",
       "<redact:^[^-].*>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -221,25 +221,31 @@
       "<any>",
       "<redact:^[^-/][^0-9].*|^[^-/0-9].+>"
     ],
-    "priority": 2,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
   {
     "id": "LNX-OPENSSL-PASS",
     "comment": "pass:secret is a single token. '<redact:^pass:.+>' matches it; redact_after trims the 'pass:' prefix so only the secret is starred.",
-    "phrase": ["-passin", "<redact:^pass:.+>"],
+    "phrase": [
+      "-passin",
+      "<redact:^pass:.+>"
+    ],
     "redact_after": "pass:",
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
   {
     "id": "LNX-OPENSSL-PASSOUT",
     "comment": "Same as LNX-OPENSSL-PASS but for -passout.",
-    "phrase": ["-passout", "<redact:^pass:.+>"],
+    "phrase": [
+      "-passout",
+      "<redact:^pass:.+>"
+    ],
     "redact_after": "pass:",
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -251,7 +257,7 @@
       "--vault-password-file",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -262,7 +268,7 @@
       "-p",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   }

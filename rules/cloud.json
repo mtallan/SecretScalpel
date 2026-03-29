@@ -8,7 +8,7 @@
       "aws_access_key_id",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 16
   },
@@ -21,7 +21,7 @@
       "aws_secret_access_key",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 16
   },

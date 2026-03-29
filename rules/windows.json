@@ -77,7 +77,7 @@
       "=",
       "<REDACT>"
     ],
-    "priority": 3,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -101,7 +101,7 @@
       "<any:^[\\\\/]+.*>",
       "<REDACT>"
     ],
-    "priority": 4,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -114,7 +114,7 @@
       "<REDACT>",
       "domain"
     ],
-    "priority": 3,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -128,7 +128,7 @@
       "<any>",
       "<REDACT>"
     ],
-    "priority": 2,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -143,7 +143,7 @@
       "<REDACT>",
       "domain"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -157,7 +157,7 @@
       "<any>",
       "<REDACT>"
     ],
-    "priority": 2,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -172,7 +172,7 @@
       "<REDACT>",
       "domain"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -186,7 +186,7 @@
       "<any>",
       "<REDACT>"
     ],
-    "priority": 2,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -199,7 +199,7 @@
       "<REDACT>",
       "domain"
     ],
-    "priority": 2,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -212,7 +212,7 @@
       "<REDACT>",
       "/domain"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -225,7 +225,7 @@
       "<REDACT>",
       "/add"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -239,7 +239,7 @@
       "p",
       "<REDACT>"
     ],
-    "priority": 2,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -253,7 +253,7 @@
       "-p",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -268,7 +268,7 @@
       "<REDACT>",
       "<any>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -281,7 +281,7 @@
       "-p",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -293,7 +293,7 @@
       "<redact:^-p.+>"
     ],
     "redact_after": "-p",
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -307,7 +307,7 @@
       "-p",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -322,7 +322,7 @@
       "<REDACT>",
       "<any>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -335,7 +335,7 @@
       "-p",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -347,7 +347,7 @@
       "<redact:^-p.+>"
     ],
     "redact_after": "-p",
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -361,7 +361,7 @@
       "-p",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -375,7 +375,7 @@
       "-p",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -387,7 +387,7 @@
       "<redact:^-p.+>"
     ],
     "redact_after": "-p",
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -401,7 +401,7 @@
       "-p",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -415,7 +415,7 @@
       "-P",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -429,7 +429,7 @@
       "p",
       "<REDACT>"
     ],
-    "priority": 2,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -444,7 +444,7 @@
       "password",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -456,7 +456,7 @@
       "<any:^[-/]p$>",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -468,7 +468,7 @@
       "p",
       "<REDACT>"
     ],
-    "priority": 2,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -482,7 +482,7 @@
       "pass",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -495,7 +495,7 @@
       "<redact:^/pass:.*>"
     ],
     "redact_after": "/pass:",
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -509,7 +509,7 @@
       "/rp",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -524,7 +524,7 @@
       "password",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -538,7 +538,7 @@
       "--password",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -550,7 +550,7 @@
       "<any>",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -563,7 +563,7 @@
       "-pwd",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -580,7 +580,7 @@
       "-password",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -595,7 +595,7 @@
       "<any>",
       "<REDACT>"
     ],
-    "priority": 2,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -608,7 +608,7 @@
       "<redact:^/password:.*>"
     ],
     "redact_after": "/password:",
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -622,7 +622,7 @@
       "<redact:^/passwordd:.*>"
     ],
     "redact_after": "/passwordd:",
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -638,7 +638,7 @@
       "<redact:^keymaterial=.*>"
     ],
     "redact_after": "keymaterial=",
-    "priority": 2,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -652,7 +652,7 @@
       "<any>"
     ],
     "redact_after": "pass=",
-    "priority": 2,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -665,7 +665,7 @@
       "-asplaintext",
       "-force"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -679,7 +679,7 @@
       "-password",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -692,7 +692,7 @@
       "-newpassword",
       "<REDACT>"
     ],
-    "priority": 2,
+    "priority": 0,
     "enabled": true,
     "min_length": 5
   },
@@ -703,7 +703,7 @@
       "-p",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -716,7 +716,7 @@
       "<any>",
       "<redact:^[^/-].*>"
     ],
-    "priority": 3,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -728,7 +728,7 @@
       "-p",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -739,7 +739,7 @@
       "-p",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -751,7 +751,7 @@
       "-p",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -766,7 +766,7 @@
       "-p",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -780,7 +780,7 @@
       "<any:^(?i)/user:.+>",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },

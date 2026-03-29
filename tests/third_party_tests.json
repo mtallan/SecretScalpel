@@ -58,5 +58,10 @@
     "id": "secretsdump-hash-line",
     "input": "Administrator:500:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::",
     "expected": "Administrator:500:*****************************************************************:::"
+  },
+  {
+    "id": "3p-git-auth",
+    "input": "git clone https://user:ghp_MySecretToken123@github.com/org/repo.git",
+    "expected": "git clone https://user:********************@github.com/org/repo.git"
   }
 ]

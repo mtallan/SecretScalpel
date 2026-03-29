@@ -9,7 +9,7 @@
       "-pw",
       "<REDACT>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -21,7 +21,7 @@
       "-u",
       "<redact:.*:.*>"
     ],
-    "priority": 2,
+    "priority": 0,
     "enabled": true,
     "min_length": 3
   },
@@ -33,7 +33,7 @@
       "--user",
       "<redact:.*:.*>"
     ],
-    "priority": 2,
+    "priority": 0,
     "enabled": true,
     "min_length": 3
   },
@@ -41,7 +41,7 @@
     "id": "3P-GIT-AUTH",
     "comment": "Matches git clone URLs with embedded credentials. Regex is required here to redact a substring within a single token.",
     "phrase": [
-      "(?i)git\\\\s+clone\\\\s+https?://(?:.+?):(.+)@"
+      "(?i)git\\s+clone\\s+https?://(?:.+?):(.+)@"
     ],
     "isRegex": true,
     "required_byte": "@",
@@ -83,7 +83,7 @@
       "-P",
       "<redact:^[^-].*>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -97,7 +97,7 @@
       "-P",
       "<redact:^[^-].*>"
     ],
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -112,7 +112,7 @@
       "<redact:^password=.+>"
     ],
     "redact_after": "password=",
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
@@ -126,7 +126,7 @@
       "<redact:^password=.+>"
     ],
     "redact_after": "password=",
-    "priority": 1,
+    "priority": 0,
     "enabled": true,
     "min_length": 4
   },
