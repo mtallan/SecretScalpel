@@ -2,7 +2,9 @@
   {
     "id": "PHASE0-GENERIC-FLAG-PASSWORD",
     "comment": "Matches generic password flags like --password=secret, /pass:secret, --pw \"secret\".",
-    "phrase": ["(?i)(?:--|/)(?:password|pass|pwd|pw)[:=]['\"]?([^'\"\\s]+)['\"]?"],
+    "phrase": [
+      "(?i)(?:--|/)(?:password|pass|pwd|pw)[:=]['\"]?([^'\"\\s]+)['\"]?"
+    ],
     "isRegex": true,
     "priority": 4,
     "enabled": true,
@@ -11,7 +13,9 @@
   {
     "id": "PHASE0-GENERIC-FLAG-SHORT",
     "comment": "Matches short, attached password flags like -p:secret or /rp=secret.",
-    "phrase": ["(?i)(?:--?|/)(?:p|rp)[=:]([^\\s'\"]+)"],
+    "phrase": [
+      "(?i)(?:--?|/)(?:p|rp)[=:]([^\\s'\"]+)"
+    ],
     "isRegex": true,
     "priority": 4,
     "enabled": true,
@@ -20,7 +24,9 @@
   {
     "id": "PHASE0-IMPACKET-AUTH-IP",
     "comment": "Matches impacket-style credentials targeting an IP address, e.g., user:pass@10.0.0.1. This is safer than a general-purpose hostname match.",
-    "phrase": ["(?i)(?:[a-zA-Z0-9_.-]+[\\\\/])?[a-zA-Z0-9_.-]+:([^\\s:]+)@(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"],
+    "phrase": [
+      "(?i)(?:[a-zA-Z0-9_.-]+[\\\\/])?[a-zA-Z0-9_.-]+:([^\\s:]+)@(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
+    ],
     "isRegex": true,
     "required_byte": "@",
     "priority": 4,
@@ -30,7 +36,9 @@
   {
     "id": "PHASE0-IMPACKET-AUTH-HOST",
     "comment": "Matches impacket-style credentials targeting a single-word hostname (no dots), e.g., user:pass@DC01. This avoids false positives on email addresses.",
-    "phrase": ["(?i)(?:[a-zA-Z0-9_.-]+[\\\\/])?[a-zA-Z0-9_.-]+:([^\\s:]+)@[a-zA-Z0-9_-]+"],
+    "phrase": [
+      "(?i)(?:[a-zA-Z0-9_.-]+[\\\\/])?[a-zA-Z0-9_.-]+:([^\\s:]+)@[a-zA-Z0-9_-]+"
+    ],
     "isRegex": true,
     "required_byte": "@",
     "priority": 4,
@@ -40,7 +48,9 @@
   {
     "id": "PHASE0-URI-BASIC-AUTH",
     "comment": "Matches standard URL basic authentication credentials like https://user:pass@host.",
-    "phrase": ["(?i)https?://[^\\s:]+:([^\\s@:]+)@[^\\s/]+"],
+    "phrase": [
+      "(?i)https?://[^\\s:]+:([^\\s@:]+)@[^\\s/]+"
+    ],
     "isRegex": true,
     "required_byte": "@",
     "priority": 4,
@@ -50,7 +60,9 @@
   {
     "id": "PHASE0-DB-CONNECTION-STRING",
     "comment": "Matches database connection string passwords like ;Password=secret; or ;Pwd=secret.",
-    "phrase": ["(?i);(?:Password|Pwd)\\s*=\\s*([^;\"']+)"],
+    "phrase": [
+      "(?i);(?:Password|Pwd)\\s*=\\s*([^;\"']+)"
+    ],
     "isRegex": true,
     "required_byte": ";",
     "priority": 4,
@@ -60,7 +72,11 @@
   {
     "id": "PS-ENV-VAR-ASSIGNMENT",
     "comment": "Matches PowerShell environment variable assignments like $env:PASSWORD = secret. Token sequence: <$env:VAR> <=> <value>.",
-    "phrase": ["<any:(?i)\\$env:(?:password|pass|pwd|secret|token|apikey|cred)>", "=", "<REDACT>"],
+    "phrase": [
+      "<any:(?i)\\$env:(?:password|pass|pwd|secret|token|apikey|cred)>",
+      "=",
+      "<REDACT>"
+    ],
     "priority": 3,
     "enabled": true,
     "min_length": 4
@@ -80,7 +96,7 @@
   {
     "id": "NET-USE-TARGET-PASS",
     "phrase": [
-      "net",
+      "<any:^net1?$>",
       "use",
       "<any:^[\\\\/]+.*>",
       "<REDACT>"
@@ -92,7 +108,7 @@
   {
     "id": "NET-USE-TARGET-PASS-DOMAIN",
     "phrase": [
-      "net",
+      "<any:^net1?$>",
       "use",
       "<any:^[\\\\/]+.*>",
       "<REDACT>",
@@ -105,7 +121,7 @@
   {
     "id": "NET-USE-DRIVE-PASS",
     "phrase": [
-      "net",
+      "<any:^net1?$>",
       "use",
       "<any:^[a-zA-Z]:$>",
       "<any:^[\\\\/]+.*>",
@@ -119,7 +135,7 @@
   {
     "id": "NET-USE-DRIVE-PASS-DOMAIN",
     "phrase": [
-      "net",
+      "<any:^net1?$>",
       "use",
       "<any:^[a-zA-Z]:$>",
       "<any:^[\\\\/]+.*>",
@@ -134,7 +150,7 @@
   {
     "id": "NET-USE-INLINE",
     "phrase": [
-      "net",
+      "<any:^net1?$>",
       "use",
       "<any:^[A-Za-z]:$>",
       "<any:^\\\\\\\\.*>",
@@ -148,7 +164,7 @@
   {
     "id": "NET-USE-INLINE-DOMAIN",
     "phrase": [
-      "net",
+      "<any:^net1?$>",
       "use",
       "<any:^[A-Za-z]:$>",
       "<any:^\\\\\\\\.*>",
@@ -163,7 +179,7 @@
   {
     "id": "NET-USE-INLINE-SINGLE",
     "phrase": [
-      "net",
+      "<any:^net1?$>",
       "use",
       "<any:^[A-Za-z]:$>",
       "<any:^\\\\.*>",
@@ -177,7 +193,7 @@
   {
     "id": "NET-USER-DOMAIN",
     "phrase": [
-      "net",
+      "<any:^net1?$>",
       "user",
       "<any>",
       "<REDACT>",
@@ -190,7 +206,7 @@
   {
     "id": "NET-USER-DOMAIN-SLASH",
     "phrase": [
-      "net",
+      "<any:^net1?$>",
       "user",
       "<any>",
       "<REDACT>",
@@ -203,7 +219,7 @@
   {
     "id": "NET-USER-ADD",
     "phrase": [
-      "net",
+      "<any:^net1?$>",
       "user",
       "<any>",
       "<REDACT>",
@@ -695,7 +711,7 @@
     "id": "NET-USER-SET",
     "comment": "Hardened: 4th token must not start with / or - (flags like /active:yes, /delete, /expires). This rule is intentionally broad to catch passwords set without flags, accepting a minor risk of false positives on prose.",
     "phrase": [
-      "net",
+      "<any:^net1?$>",
       "user",
       "<any>",
       "<redact:^[^/-].*>"
@@ -738,8 +754,7 @@
     "priority": 1,
     "enabled": true,
     "min_length": 4
-  }
-,
+  },
   {
     "id": "WIN-WINRS-SEPARATED",
     "comment": "Matches Windows Remote Shell (winrs) with a separated password flag.",
@@ -754,5 +769,55 @@
     "priority": 1,
     "enabled": true,
     "min_length": 4
+  },
+  {
+    "id": "NET-USE-USER-FLAG",
+    "comment": "Matches net/net1 use with /user: flag: net use \\\\server\\share /user:DOMAIN\\admin P@ssword",
+    "phrase": [
+      "<any:^net1?$>",
+      "use",
+      "<any:^[\\\\/]+.*>",
+      "<any:^(?i)/user:.+>",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "WIN-MSIEXEC-PASS",
+    "comment": "Matches msiexec installer property passwords like INSTALLPASSWORD=secret.",
+    "phrase": [
+      "(?i)\\b(?:INSTALLPASSWORD|DBPASSWORD|SERVICEPASSWORD)=([^\\s'\\\"]+)"
+    ],
+    "isRegex": true,
+    "required_byte": "=",
+    "priority": 3,
+    "enabled": true,
+    "min_length": 3
+  },
+  {
+    "id": "WIN-MIMIKATZ-PASSWORD",
+    "comment": "Matches plaintext passwords in mimikatz sekurlsa output: * Password : P@ssword",
+    "phrase": [
+      "(?i)\\*\\s+Password\\s*:\\s*(\\S+)"
+    ],
+    "isRegex": true,
+    "required_byte": "*",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "WIN-MIMIKATZ-NTLM",
+    "comment": "Matches NTLM hashes in mimikatz output: * NTLM : aad3b435b51404eeaad3b435b51404ee",
+    "phrase": [
+      "(?i)\\*\\s+NTLM\\s*:\\s*([0-9a-f]{32})\\b"
+    ],
+    "isRegex": true,
+    "required_byte": "*",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 32
   }
 ]

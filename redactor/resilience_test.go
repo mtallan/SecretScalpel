@@ -2,10 +2,8 @@ package redactor
 
 import (
 	"bytes"
-	"context"
 	"io"
 	"strings"
-	"sync/atomic"
 	"testing"
 )
 
@@ -49,10 +47,12 @@ func TestRedactBytes_NegativeCases(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			// Must not panic
-			got := RedactBytes([]byte(tc.input), testRoot)
+			var buf bytes.Buffer
+			RedactBytesToWriter(&buf, []byte(tc.input), testRoot)
+			got := buf.Bytes()
 			// Output must be non-nil even for empty input
 			if got == nil && tc.input != "" {
-				t.Error("RedactBytes returned nil for non-empty input")
+				t.Error("RedactBytesToWriter produced nil for non-empty input")
 			}
 		})
 	}
@@ -110,7 +110,7 @@ func TestProcessStream_MaxLineLength(t *testing.T) {
 	input.Write(normal)
 
 	var output bytes.Buffer
-	if err := ProcessStream(context.Background(), bytes.NewReader(input.Bytes()), &output, &testTriePtr, false, 1); err != nil {
+	if err := ProcessStream(bytes.NewReader(input.Bytes()), &output, testRoot, 1); err != nil {
 		t.Fatalf("ProcessStream error: %v", err)
 	}
 
@@ -129,7 +129,7 @@ func TestProcessStream_MaxLineLength(t *testing.T) {
 // TestProcessStream_EmptyInput verifies empty input produces empty output without error.
 func TestProcessStream_EmptyInput(t *testing.T) {
 	var output bytes.Buffer
-	if err := ProcessStream(context.Background(), bytes.NewReader(nil), &output, &testTriePtr, false, 1); err != nil {
+	if err := ProcessStream(bytes.NewReader(nil), &output, testRoot, 1); err != nil {
 		t.Fatalf("unexpected error on empty input: %v", err)
 	}
 	if output.Len() != 0 {
@@ -140,11 +140,9 @@ func TestProcessStream_EmptyInput(t *testing.T) {
 // TestProcessStream_NilTrie verifies the engine doesn't panic with a nil trie.
 func TestProcessStream_NilTrie(t *testing.T) {
 	emptyTrie := NewTrie("*", 0, 0)
-	var emptyPtr atomic.Pointer[Trie]
-	emptyPtr.Store(emptyTrie)
 	input := bytes.NewReader([]byte("some log line\n"))
 	var output bytes.Buffer
-	if err := ProcessStream(context.Background(), input, &output, &emptyPtr, false, 1); err != nil {
+	if err := ProcessStream(input, &output, emptyTrie, 1); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
@@ -163,7 +161,7 @@ func TestProcessStream_OutputOrdering(t *testing.T) {
 	}
 
 	var output bytes.Buffer
-	if err := ProcessStream(context.Background(), bytes.NewReader(input.Bytes()), &output, &testTriePtr, false, 4); err != nil {
+	if err := ProcessStream(bytes.NewReader(input.Bytes()), &output, testRoot, 4); err != nil {
 		t.Fatalf("ProcessStream error: %v", err)
 	}
 
@@ -180,7 +178,7 @@ func TestProcessStream_ConcurrentSafety(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		t.Run("run", func(t *testing.T) {
 			t.Parallel()
-			if err := ProcessStream(context.Background(), bytes.NewReader(input), io.Discard, &testTriePtr, false, 2); err != nil {
+			if err := ProcessStream(bytes.NewReader(input), io.Discard, testRoot, 2); err != nil {
 				t.Errorf("ProcessStream error: %v", err)
 			}
 		})
@@ -209,10 +207,11 @@ func FuzzRedactBytes(f *testing.F) {
 
 	f.Fuzz(func(t *testing.T, data []byte) {
 		// Must not panic
-		got := RedactBytes(data, testRoot)
+		var buf bytes.Buffer
+		RedactBytesToWriter(&buf, data, testRoot)
 		// Output length must never exceed input length by more than the mask overhead
 		// (redacted region replaced 1:1 with stars or mask string, so len(out) == len(in))
-		_ = got
+		_ = buf.Bytes()
 	})
 }
 
@@ -241,3 +240,4 @@ func FuzzRedactAllJSONStrings(f *testing.F) {
 		_ = got
 	})
 }
+

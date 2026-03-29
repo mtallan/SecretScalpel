@@ -1,5 +1,6 @@
-.PHONY: all build test bench clean
+.PHONY: all build test bench clean e2e
 BENCH ?= .
+TEST ?= .
 
 all: build test
 
@@ -7,7 +8,10 @@ build:
 	go build -o secretscalpel .
 
 test:
-	go test -v ./redactor/...
+	go test -v ./redactor/... -run $(TEST)
+
+e2e:
+	chmod +x tests/e2e.sh && ./tests/e2e.sh
 
 bench:
 	go test -bench=$(BENCH) -benchmem ./redactor/...

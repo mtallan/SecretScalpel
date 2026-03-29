@@ -1,28 +1,63 @@
 [
   {
     "id": "CLOUD-AWS-CONFIGURE-SET-KEY-ID",
-    "phrase": ["aws", "configure", "set", "aws_access_key_id", "<REDACT>"],
+    "phrase": [
+      "aws",
+      "configure",
+      "set",
+      "aws_access_key_id",
+      "<REDACT>"
+    ],
     "priority": 1,
     "enabled": true,
     "min_length": 16
   },
   {
     "id": "CLOUD-AWS-CONFIGURE-SET-SECRET-KEY",
-    "phrase": ["aws", "configure", "set", "aws_secret_access_key", "<REDACT>"],
+    "phrase": [
+      "aws",
+      "configure",
+      "set",
+      "aws_secret_access_key",
+      "<REDACT>"
+    ],
     "priority": 1,
     "enabled": true,
     "min_length": 16
-  }
-,
+  },
   {
     "id": "CLOUD-GCLOUD-SQL-SET-PASSWORD",
     "comment": "Matches gcloud command for setting a SQL user password.",
     "phrase": [
-      "(?i)gcloud\\\\s+sql\\\\s+users\\\\s+set-password(?:.*?)(?:--password(?:=|\\\\s+)([^'\"\\\\s]+))"
+      "(?i)gcloud\\s+sql\\s+users\\s+set-password(?:.*?)(?:--password(?:=|\\s+)([^'\\\"\\s]+))"
     ],
     "isRegex": true,
     "priority": 1,
     "enabled": true,
     "min_length": 5
+  },
+  {
+    "id": "CLOUD-AWS-SECRETS-PUT",
+    "comment": "Matches AWS CLI secretsmanager --secret-string flag.",
+    "phrase": [
+      "(?i)\\baws\\s+secretsmanager\\s+\\S+.*?--secret-string\\s+([^\\s'\\\"]+)"
+    ],
+    "isRegex": true,
+    "required_byte": "-",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 3
+  },
+  {
+    "id": "CLOUD-AZ-KEYVAULT-SET",
+    "comment": "Matches Azure CLI keyvault secret set --value flag.",
+    "phrase": [
+      "(?i)\\baz\\s+keyvault\\s+secret\\s+set\\b.*?--value\\s+([^\\s'\\\"]+)"
+    ],
+    "isRegex": true,
+    "required_byte": "-",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 3
   }
 ]

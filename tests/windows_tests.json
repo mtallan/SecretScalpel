@@ -313,5 +313,70 @@
     "id": "WIN-NEG-PROSE-NET-USER-ADD",
     "input": "The net user command can /add a new user.",
     "expected": "The net user command can /add a new user."
+  },
+  {
+    "id": "net1-user-domain",
+    "input": "net1 user bob Secret123 domain",
+    "expected": "net1 user bob ********* domain"
+  },
+  {
+    "id": "net1-use-domain",
+    "input": "net1 use \\\\srv\\share Pass123 domain",
+    "expected": "net1 use \\\\srv\\share ******* domain"
+  },
+  {
+    "id": "net1-user-set-password-basic",
+    "input": "net1 user alice S3cr3t!",
+    "expected": "net1 user alice *******"
+  },
+  {
+    "id": "net1-user-set-password-domain",
+    "input": "net1 user alice S3cr3t! /domain",
+    "expected": "net1 user alice ******* /domain"
+  },
+  {
+    "id": "net1-user-add-with-password",
+    "input": "net1 user bob P@ssw0rd /add",
+    "expected": "net1 user bob ******** /add"
+  },
+  {
+    "id": "net1-use-inline-password",
+    "input": "net1 use Z: \\fileserver\\share alice P@ssw0rd",
+    "expected": "net1 use Z: \\fileserver\\share alice ********"
+  },
+  {
+    "id": "net1-use-inline-password-domain",
+    "input": "net1 use Z: \\\\fileserver\\share alice P@ssw0rd domain",
+    "expected": "net1 use Z: \\\\fileserver\\share alice ******** domain"
+  },
+  {
+    "id": "net-use-user-flag",
+    "input": "net use \\\\server\\share /user:DOMAIN\\admin P@ssword",
+    "expected": "net use \\\\server\\share /user:DOMAIN\\admin ********"
+  },
+  {
+    "id": "net1-use-user-flag",
+    "input": "net1 use \\\\server\\share /user:DOMAIN\\admin P@ssword",
+    "expected": "net1 use \\\\server\\share /user:DOMAIN\\admin ********"
+  },
+  {
+    "id": "msiexec-install-password",
+    "input": "msiexec /i setup.msi INSTALLPASSWORD=S3cr3t!",
+    "expected": "msiexec /i setup.msi INSTALLPASSWORD=*******"
+  },
+  {
+    "id": "msiexec-db-password",
+    "input": "msiexec /i setup.msi DBPASSWORD=S3cr3t!",
+    "expected": "msiexec /i setup.msi DBPASSWORD=*******"
+  },
+  {
+    "id": "mimikatz-password-line",
+    "input": "         * Password : P@ssword",
+    "expected": "         * Password : ********"
+  },
+  {
+    "id": "mimikatz-ntlm-line",
+    "input": "         * NTLM     : 31d6cfe0d16ae931b73c59d7e0c089c0",
+    "expected": "         * NTLM     : ********************************"
   }
 ]

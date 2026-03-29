@@ -18,5 +18,45 @@
     "id": "3P-GIT-AUTH-CLONE",
     "input": "git clone https://user:MyP@ssw0rd!@github.com/user/repo.git",
     "expected": "git clone https://user:***********@github.com/user/repo.git"
+  },
+  {
+    "id": "sqlplus-password-with-service",
+    "input": "sqlplus admin/Secret123@ORCL",
+    "expected": "sqlplus admin/*********@ORCL"
+  },
+  {
+    "id": "sqlplus-password-no-service",
+    "input": "sqlplus admin/Secret123",
+    "expected": "sqlplus admin/*********"
+  },
+  {
+    "id": "svn-password-flag",
+    "input": "svn checkout --username alice --password P@ssword https://svn.example.com/repo",
+    "expected": "svn checkout --username alice --password ******** https://svn.example.com/repo"
+  },
+  {
+    "id": "sqsh-password",
+    "input": "sqsh -U admin -P P@ssword -S sqlserver",
+    "expected": "sqsh -U admin -P ******** -S sqlserver"
+  },
+  {
+    "id": "isql-password",
+    "input": "isql -U admin -P P@ssword -S sqlserver",
+    "expected": "isql -U admin -P ******** -S sqlserver"
+  },
+  {
+    "id": "vault-kv-put-password",
+    "input": "vault kv put secret/myapp password=P@ssword",
+    "expected": "vault kv put secret/myapp password=********"
+  },
+  {
+    "id": "vault-write-password",
+    "input": "vault write auth/userpass/users/admin password=P@ssword",
+    "expected": "vault write auth/userpass/users/admin password=********"
+  },
+  {
+    "id": "secretsdump-hash-line",
+    "input": "Administrator:500:aad3b435b51404eeaad3b435b51404ee:31d6cfe0d16ae931b73c59d7e0c089c0:::",
+    "expected": "Administrator:500:*****************************************************************:::"
   }
 ]

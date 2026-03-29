@@ -2,12 +2,10 @@ package redactor
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"io"
 	"log/slog"
 	"os"
-	"sync/atomic"
 	"testing"
 )
 
@@ -18,7 +16,6 @@ type TestCase struct {
 }
 
 var testRoot *Trie
-var testTriePtr atomic.Pointer[Trie]
 
 func TestMain(m *testing.M) {
 	testRoot = NewTrie("*", 2, 0)
@@ -29,7 +26,6 @@ func TestMain(m *testing.M) {
 			slog.Warn("Failed to load rules for tests (proceeding with empty trie)", "error", err)
 		}
 	}
-	testTriePtr.Store(testRoot)
 	os.Exit(m.Run())
 }
 
@@ -61,10 +57,14 @@ func runTestSuite(t *testing.T, testFile string, mode testMode) {
 				if bytes.HasPrefix(bytes.TrimSpace(inputBytes), []byte("{")) {
 					resultBytes = RedactAllJSONStrings(inputBytes, testRoot)
 				} else {
-					resultBytes = RedactBytes(inputBytes, testRoot)
+					var buf bytes.Buffer
+					RedactBytesToWriter(&buf, inputBytes, testRoot)
+					resultBytes = buf.Bytes()
 				}
 			case rawOnly:
-				resultBytes = RedactBytes(inputBytes, testRoot)
+				var buf bytes.Buffer
+				RedactBytesToWriter(&buf, inputBytes, testRoot)
+				resultBytes = buf.Bytes()
 			case jsonOnly:
 				resultBytes = RedactAllJSONStrings(inputBytes, testRoot)
 			}
@@ -98,18 +98,34 @@ func TestJSONKeyRules(t *testing.T) {
 	runTestSuite(t, "../tests/json_key_tests.json", jsonOnly)
 }
 
+func TestGenericRules(t *testing.T) {
+	runTestSuite(t, "../tests/generic_tests.json", autoDetect)
+}
+
+// realisticChunk is shared by the 100MB orchestrator benchmarks.
+var realisticChunk = []byte(
+	`{"log": "User alice logged in from 10.0.0.1", "level": "INFO"}` + "\n" +
+		`{"log": "File /etc/config read successfully", "level": "DEBUG"}` + "\n" +
+		`{"log": "Service restarted on port 8080", "level": "INFO"}` + "\n" +
+		`{"log": "Health check passed", "level": "INFO"}` + "\n" +
+		`{"log": "Request completed in 42ms", "level": "DEBUG"}` + "\n" +
+		`{"log": "User bob logged out", "level": "INFO"}` + "\n" +
+		`{"log": "Disk usage at 42%", "level": "INFO"}` + "\n" +
+		`{"log": "Connection from 192.168.1.5 established", "level": "DEBUG"}` + "\n" +
+		`{"log": "Cache miss for key user:1234", "level": "DEBUG"}` + "\n" +
+		`{"log": "Scheduled job completed", "level": "INFO"}` + "\n" +
+		`{"log": "Memory usage normal", "level": "INFO"}` + "\n" +
+		`{"log": "API request to /health returned 200", "level": "DEBUG"}` + "\n" +
+		`{"log": "User session expired", "level": "INFO"}` + "\n" +
+		`{"log": "Config reload triggered", "level": "INFO"}` + "\n" +
+		`{"log": "Thread pool size adjusted to 8", "level": "DEBUG"}` + "\n" +
+		`{"log": "Backup completed successfully", "level": "INFO"}` + "\n" +
+		`{"log": "Network latency 2ms", "level": "DEBUG"}` + "\n" +
+		`{"log": "Queue depth 0", "level": "INFO"}` + "\n" +
+		`{"log": "TLS handshake completed", "level": "DEBUG"}` + "\n" +
+		`{"log": "psexec -u admin -p SuperSecret! cmd.exe", "level": "WARN"}` + "\n")
+
 func BenchmarkEngine_1MB_Raw(b *testing.B) {
-	root := NewTrie("********", 2, 0)
-
-	// Load your actual rules. Since the test runs inside the /redactor
-	// directory, we step up one level to hit the /rules folder.
-	err := LoadRulesFromDir("../rules", root)
-	if err != nil {
-		if err := LoadRulesFromDir("rules", root); err != nil {
-			b.Fatalf("Failed to load rules for benchmark: %v", err)
-		}
-	}
-
 	// Build a chunky dummy log chunk
 	chunk := []byte(`{"timestamp": "2026-03-01T12:00:00Z", "cmd": "net use Z: \\server\share P@ssw0rd123! domain"}
 2026-03-01 12:00:01 INFO Executing: psexec -u admin -p SuperSecret! cmd.exe
@@ -133,19 +149,13 @@ custom-cli.exe /p:MyP@ssword! /silent
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_ = RedactBytes(rawBytes, root)
+		var buf bytes.Buffer
+		RedactBytesToWriter(&buf, rawBytes, testRoot)
+		_ = buf.Bytes()
 	}
 }
 
 func BenchmarkEngine_1MB_JSONWalker(b *testing.B) {
-	root := NewTrie("********", 2, 0)
-	err := LoadRulesFromDir("../rules", root)
-	if err != nil {
-		if err := LoadRulesFromDir("rules", root); err != nil {
-			b.Fatalf("Failed to load rules for benchmark: %v", err)
-		}
-	}
-
 	// Same chunk, but wrapped entirely in a JSON array structure
 	chunk := []byte(`{"log": "net use Z: \\server\share P@ssw0rd123! domain", "level": "INFO"},
 {"log": "psexec -u admin -p SuperSecret! cmd.exe", "level": "WARN"},
@@ -167,20 +177,10 @@ func BenchmarkEngine_1MB_JSONWalker(b *testing.B) {
 	b.SetBytes(int64(len(rawBytes)))
 
 	for i := 0; i < b.N; i++ {
-		_ = RedactAllJSONStrings(rawBytes, root)
+		_ = RedactAllJSONStrings(rawBytes, testRoot)
 	}
 }
 func BenchmarkOrchestrator_1MB_JSONWalker(b *testing.B) {
-	root := NewTrie("********", 2, 0)
-	err := LoadRulesFromDir("../rules", root)
-	if err != nil {
-		if err := LoadRulesFromDir("rules", root); err != nil {
-			b.Fatalf("Failed to load rules: %v", err)
-		}
-	}
-	var rootPtr atomic.Pointer[Trie]
-	rootPtr.Store(root)
-
 	chunk := []byte(`{"log": "net use Z: \\server\share P@ssw0rd123! domain", "level": "INFO"}` + "\n" +
 		`{"log": "psexec -u admin -p SuperSecret! cmd.exe", "level": "WARN"}` + "\n" +
 		`{"log": "https://admin:MySecretPass@api.corp.local/data", "level": "DEBUG"}` + "\n" +
@@ -198,47 +198,14 @@ func BenchmarkOrchestrator_1MB_JSONWalker(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		// Use io.Discard because we don't care about the final output during the speed test
-		_ = ProcessStream(context.Background(), bytes.NewReader(rawBytes), io.Discard, &rootPtr, true, 0)
+		_ = ProcessStream(bytes.NewReader(rawBytes), io.Discard, testRoot, 0)
 	}
 }
 func BenchmarkOrchestrator_1MB_Realistic(b *testing.B) {
-	root := NewTrie("********", 2, 0)
-	err := LoadRulesFromDir("../rules", root)
-	if err != nil {
-		if err := LoadRulesFromDir("rules", root); err != nil {
-			b.Fatalf("Failed to load rules: %v", err)
-		}
-	}
-	var rootPtr atomic.Pointer[Trie]
-	rootPtr.Store(root)
-
 	// 1 secret per ~20 normal lines — closer to real MSSP data
-	chunk := []byte(
-		`{"log": "User alice logged in from 10.0.0.1", "level": "INFO"}` + "\n" +
-			`{"log": "File /etc/config read successfully", "level": "DEBUG"}` + "\n" +
-			`{"log": "Service restarted on port 8080", "level": "INFO"}` + "\n" +
-			`{"log": "Health check passed", "level": "INFO"}` + "\n" +
-			`{"log": "Request completed in 42ms", "level": "DEBUG"}` + "\n" +
-			`{"log": "User bob logged out", "level": "INFO"}` + "\n" +
-			`{"log": "Disk usage at 42%", "level": "INFO"}` + "\n" +
-			`{"log": "Connection from 192.168.1.5 established", "level": "DEBUG"}` + "\n" +
-			`{"log": "Cache miss for key user:1234", "level": "DEBUG"}` + "\n" +
-			`{"log": "Scheduled job completed", "level": "INFO"}` + "\n" +
-			`{"log": "Memory usage normal", "level": "INFO"}` + "\n" +
-			`{"log": "API request to /health returned 200", "level": "DEBUG"}` + "\n" +
-			`{"log": "User session expired", "level": "INFO"}` + "\n" +
-			`{"log": "Config reload triggered", "level": "INFO"}` + "\n" +
-			`{"log": "Thread pool size adjusted to 8", "level": "DEBUG"}` + "\n" +
-			`{"log": "Backup completed successfully", "level": "INFO"}` + "\n" +
-			`{"log": "Network latency 2ms", "level": "DEBUG"}` + "\n" +
-			`{"log": "Queue depth 0", "level": "INFO"}` + "\n" +
-			`{"log": "TLS handshake completed", "level": "DEBUG"}` + "\n" +
-			`{"log": "psexec -u admin -p SuperSecret! cmd.exe", "level": "WARN"}` + "\n")
-
 	var input bytes.Buffer
 	for input.Len() < 1024*1024 {
-		input.Write(chunk)
+		input.Write(realisticChunk)
 	}
 	rawBytes := input.Bytes()
 
@@ -247,45 +214,13 @@ func BenchmarkOrchestrator_1MB_Realistic(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_ = ProcessStream(context.Background(), bytes.NewReader(rawBytes), io.Discard, &rootPtr, true, 0)
+		_ = ProcessStream(bytes.NewReader(rawBytes), io.Discard, testRoot, 0)
 	}
 }
 func BenchmarkOrchestrator_100MB_Realistic(b *testing.B) {
-	root := NewTrie("********", 2, 0)
-	err := LoadRulesFromDir("../rules", root)
-	if err != nil {
-		if err := LoadRulesFromDir("rules", root); err != nil {
-			b.Fatalf("Failed to load rules: %v", err)
-		}
-	}
-	var rootPtr atomic.Pointer[Trie]
-	rootPtr.Store(root)
-
-	chunk := []byte(
-		`{"log": "User alice logged in from 10.0.0.1", "level": "INFO"}` + "\n" +
-			`{"log": "File /etc/config read successfully", "level": "DEBUG"}` + "\n" +
-			`{"log": "Service restarted on port 8080", "level": "INFO"}` + "\n" +
-			`{"log": "Health check passed", "level": "INFO"}` + "\n" +
-			`{"log": "Request completed in 42ms", "level": "DEBUG"}` + "\n" +
-			`{"log": "User bob logged out", "level": "INFO"}` + "\n" +
-			`{"log": "Disk usage at 42%", "level": "INFO"}` + "\n" +
-			`{"log": "Connection from 192.168.1.5 established", "level": "DEBUG"}` + "\n" +
-			`{"log": "Cache miss for key user:1234", "level": "DEBUG"}` + "\n" +
-			`{"log": "Scheduled job completed", "level": "INFO"}` + "\n" +
-			`{"log": "Memory usage normal", "level": "INFO"}` + "\n" +
-			`{"log": "API request to /health returned 200", "level": "DEBUG"}` + "\n" +
-			`{"log": "User session expired", "level": "INFO"}` + "\n" +
-			`{"log": "Config reload triggered", "level": "INFO"}` + "\n" +
-			`{"log": "Thread pool size adjusted to 8", "level": "DEBUG"}` + "\n" +
-			`{"log": "Backup completed successfully", "level": "INFO"}` + "\n" +
-			`{"log": "Network latency 2ms", "level": "DEBUG"}` + "\n" +
-			`{"log": "Queue depth 0", "level": "INFO"}` + "\n" +
-			`{"log": "TLS handshake completed", "level": "DEBUG"}` + "\n" +
-			`{"log": "psexec -u admin -p SuperSecret! cmd.exe", "level": "WARN"}` + "\n")
-
 	var input bytes.Buffer
 	for input.Len() < 100*1024*1024 {
-		input.Write(chunk)
+		input.Write(realisticChunk)
 	}
 	rawBytes := input.Bytes()
 
@@ -294,46 +229,14 @@ func BenchmarkOrchestrator_100MB_Realistic(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		_ = ProcessStream(context.Background(), bytes.NewReader(rawBytes), io.Discard, &rootPtr, true, 0)
+		_ = ProcessStream(bytes.NewReader(rawBytes), io.Discard, testRoot, 0)
 	}
 }
 
 func BenchmarkOrchestrator_100MB_Realistic_1Core(b *testing.B) {
-	root := NewTrie("********", 2, 0)
-	err := LoadRulesFromDir("../rules", root)
-	if err != nil {
-		if err := LoadRulesFromDir("rules", root); err != nil {
-			b.Fatalf("Failed to load rules: %v", err)
-		}
-	}
-	var rootPtr atomic.Pointer[Trie]
-	rootPtr.Store(root)
-
-	chunk := []byte(
-		`{"log": "User alice logged in from 10.0.0.1", "level": "INFO"}` + "\n" +
-			`{"log": "File /etc/config read successfully", "level": "DEBUG"}` + "\n" +
-			`{"log": "Service restarted on port 8080", "level": "INFO"}` + "\n" +
-			`{"log": "Health check passed", "level": "INFO"}` + "\n" +
-			`{"log": "Request completed in 42ms", "level": "DEBUG"}` + "\n" +
-			`{"log": "User bob logged out", "level": "INFO"}` + "\n" +
-			`{"log": "Disk usage at 42%", "level": "INFO"}` + "\n" +
-			`{"log": "Connection from 192.168.1.5 established", "level": "DEBUG"}` + "\n" +
-			`{"log": "Cache miss for key user:1234", "level": "DEBUG"}` + "\n" +
-			`{"log": "Scheduled job completed", "level": "INFO"}` + "\n" +
-			`{"log": "Memory usage normal", "level": "INFO"}` + "\n" +
-			`{"log": "API request to /health returned 200", "level": "DEBUG"}` + "\n" +
-			`{"log": "User session expired", "level": "INFO"}` + "\n" +
-			`{"log": "Config reload triggered", "level": "INFO"}` + "\n" +
-			`{"log": "Thread pool size adjusted to 8", "level": "DEBUG"}` + "\n" +
-			`{"log": "Backup completed successfully", "level": "INFO"}` + "\n" +
-			`{"log": "Network latency 2ms", "level": "DEBUG"}` + "\n" +
-			`{"log": "Queue depth 0", "level": "INFO"}` + "\n" +
-			`{"log": "TLS handshake completed", "level": "DEBUG"}` + "\n" +
-			`{"log": "psexec -u admin -p SuperSecret! cmd.exe", "level": "WARN"}` + "\n")
-
 	var input bytes.Buffer
 	for input.Len() < 100*1024*1024 {
-		input.Write(chunk)
+		input.Write(realisticChunk)
 	}
 	rawBytes := input.Bytes()
 
@@ -343,6 +246,6 @@ func BenchmarkOrchestrator_100MB_Realistic_1Core(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		// Force workers=1 to simulate a single-core environment
-		_ = ProcessStream(context.Background(), bytes.NewReader(rawBytes), io.Discard, &rootPtr, true, 1)
+		_ = ProcessStream(bytes.NewReader(rawBytes), io.Discard, testRoot, 1)
 	}
 }

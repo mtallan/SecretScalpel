@@ -1,0 +1,52 @@
+[
+  {
+    "id": "generic-jwt-bearer-header",
+    "input": "Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyIn0.abc123def456ghi789jkl",
+    "expected": "Authorization: Bearer **************************************************************"
+  },
+  {
+    "id": "generic-jwt-token-equals",
+    "input": "token=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyIn0.abc123def456ghi789jkl",
+    "expected": "token=**************************************************************"
+  },
+  {
+    "id": "generic-bearer-opaque-token",
+    "input": "curl -H 'Authorization: Bearer ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZabcdef'",
+    "expected": "curl -H 'Authorization: Bearer ************************************'"
+  },
+  {
+    "id": "generic-pem-rsa-single-line",
+    "input": "key: -----BEGIN RSA PRIVATE KEY----- MIIEowIBAAKCAQEA -----END RSA PRIVATE KEY-----",
+    "expected": "key: -----BEGIN RSA PRIVATE KEY-----******************-----END RSA PRIVATE KEY-----"
+  },
+  {
+    "id": "generic-pem-ec-single-line",
+    "input": "loaded -----BEGIN EC PRIVATE KEY----- MHQCAQEEIOabc+def= -----END EC PRIVATE KEY-----",
+    "expected": "loaded -----BEGIN EC PRIVATE KEY-----********************-----END EC PRIVATE KEY-----"
+  },
+  {
+    "id": "generic-aws-access-key-env",
+    "input": "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE",
+    "expected": "AWS_ACCESS_KEY_ID=********************"
+  },
+  {
+    "id": "generic-aws-access-key-log",
+    "input": "signing request with key: AKIAIOSFODNN7EXAMPLE",
+    "expected": "signing request with key: ********************"
+  },
+  {
+    "id": "generic-neg-jwt-too-short",
+    "input": "token=eyJ.abc.de",
+    "expected": "token=eyJ.abc.de"
+  },
+  {
+    "id": "generic-neg-bearer-too-short",
+    "input": "Authorization: Bearer short",
+    "expected": "Authorization: Bearer short"
+  },
+  {
+    "id": "generic-neg-partial-akia",
+    "input": "message about AKIA prefix only",
+    "expected": "message about AKIA prefix only"
+  }
+]

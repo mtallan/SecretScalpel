@@ -53,7 +53,8 @@ type Trie struct {
 	GlobalMask        string
 	RegexRules        []*RegexRule
 	JSONSensitiveKeys *JSONKeyTrieNode
-	RuleCount         int // total rules loaded (trie + regex + json_key)
+	RuleCount         int  // total rules loaded (trie + regex + json_key)
+	DebugRules        bool // if true, replace redacted values with [RULE-ID] instead of the mask
 }
 
 func NewTrie(mask string, min int, max int) *Trie {

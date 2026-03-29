@@ -23,5 +23,20 @@
     "id": "CLOUD-GCLOUD-SQL-SET-PASSWORD",
     "input": "gcloud sql users set-password sqluser --instance=my-db --password=MyDbPassword!",
     "expected": "gcloud sql users set-password sqluser --instance=my-db --password=*************"
+  },
+  {
+    "id": "cloud-aws-secrets-put",
+    "input": "aws secretsmanager put-secret-value --secret-id myapp/prod --secret-string P@ssword123",
+    "expected": "aws secretsmanager put-secret-value --secret-id myapp/prod --secret-string ***********"
+  },
+  {
+    "id": "cloud-az-keyvault-set",
+    "input": "az keyvault secret set --vault-name myVault --name mySecret --value P@ssword",
+    "expected": "az keyvault secret set --vault-name myVault --name mySecret --value ********"
+  },
+  {
+    "id": "cloud-gcloud-sql-space-separated",
+    "input": "gcloud sql users set-password sqluser --instance my-db --password MyDbPassword!",
+    "expected": "gcloud sql users set-password sqluser --instance my-db --password *************"
   }
 ]

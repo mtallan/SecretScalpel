@@ -48,5 +48,98 @@
     "priority": 1,
     "enabled": true,
     "min_length": 5
+  },
+  {
+    "id": "3P-SQLPLUS",
+    "comment": "Matches Oracle SQL*Plus credentials: sqlplus username/password[@service]",
+    "phrase": [
+      "(?i)\\bsqlplus(?:\\.exe)?\\s+[^/\\s]+/([^@\\s]+)"
+    ],
+    "isRegex": true,
+    "required_byte": "/",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 3
+  },
+  {
+    "id": "3P-SVN-PASSWORD",
+    "comment": "Matches svn with space-separated --password flag at any argument position.",
+    "phrase": [
+      "(?i)\\bsvn\\b.*?--password\\s+([^\\s'\\\"]+)"
+    ],
+    "isRegex": true,
+    "required_byte": "-",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "3P-SQSH",
+    "comment": "Matches Sybase sqsh client: sqsh -U user -P password",
+    "phrase": [
+      "sqsh",
+      "-U",
+      "<any>",
+      "-P",
+      "<redact:^[^-].*>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "3P-ISQL",
+    "comment": "Matches Sybase/MSSQL isql client: isql -U user -P password",
+    "phrase": [
+      "isql",
+      "-U",
+      "<any>",
+      "-P",
+      "<redact:^[^-].*>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "3P-VAULT-KV-PUT",
+    "comment": "Matches HashiCorp Vault kv put with password=secret key-value pair.",
+    "phrase": [
+      "vault",
+      "kv",
+      "put",
+      "<any>",
+      "<redact:^password=.+>"
+    ],
+    "redact_after": "password=",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "3P-VAULT-WRITE",
+    "comment": "Matches HashiCorp Vault write with password=secret key-value pair.",
+    "phrase": [
+      "vault",
+      "write",
+      "<any>",
+      "<redact:^password=.+>"
+    ],
+    "redact_after": "password=",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "3P-SECRETSDUMP",
+    "comment": "Matches impacket secretsdump NTLM hash lines: username:RID:LMhash:NTLMhash:::",
+    "phrase": [
+      "(?i)[^\\s:]+:[0-9]+:([0-9a-f]{32}:[0-9a-f]{32}):::"
+    ],
+    "isRegex": true,
+    "required_byte": ":",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 32
   }
 ]
