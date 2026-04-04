@@ -5,6 +5,7 @@ import (
 	"io"
 	"sort"
 	"sync"
+	"sync/atomic"
 )
 
 var globalStars = bytes.Repeat([]byte("*"), 2048)
@@ -29,6 +30,7 @@ type pendingRedaction struct {
 	targets    []RedactionTarget
 	minLength  int
 	maxLength  int
+	hits       *atomic.Int64 // nil-safe; points to the originating rule's counter
 }
 
 type interval struct{ start, end int }
@@ -93,6 +95,7 @@ func RedactBytesToWriter(w io.Writer, raw []byte, trie *Trie) {
 		w.Write(raw)
 		return
 	}
+	trie.bytesIn.Add(int64(len(raw)))
 
 	// =========================================================
 	// PHASE 0: Global Regex Scanning (Fast-Path Guarded)
@@ -110,14 +113,14 @@ func RedactBytesToWriter(w io.Writer, raw []byte, trie *Trie) {
 	ws := workspacePool.Get().(*EngineWorkspace)
 
 	// Reset the slices without shrinking their capacity
-	ws.toRedact    = ws.toRedact[:0]
-	ws.claimed     = ws.claimed[:0]
-	ws.resolved    = ws.resolved[:0]
-	ws.filtered    = ws.filtered[:0]
-	ws.targets     = ws.targets[:0]
-	ws.tokens      = ws.tokens[:0]
+	ws.toRedact = ws.toRedact[:0]
+	ws.claimed = ws.claimed[:0]
+	ws.resolved = ws.resolved[:0]
+	ws.filtered = ws.filtered[:0]
+	ws.targets = ws.targets[:0]
+	ws.tokens = ws.tokens[:0]
 	ws.activeNodes = ws.activeNodes[:0]
-	ws.nextNodes   = ws.nextNodes[:0]
+	ws.nextNodes = ws.nextNodes[:0]
 	// ws.outBuf is not used in this function.
 
 	if hasRegexTrigger {
@@ -148,6 +151,7 @@ func RedactBytesToWriter(w io.Writer, raw []byte, trie *Trie) {
 					targets:    ws.targets[targetsStart:],
 					minLength:  rr.MinLength,
 					maxLength:  rr.MaxLength,
+					hits:       rr.Hits,
 				})
 			}
 		}
@@ -181,11 +185,8 @@ func RedactBytesToWriter(w io.Writer, raw []byte, trie *Trie) {
 			tok := ws.tokens[j]
 			wordRaw := raw[tok.Start:tok.End]
 
-			n := len(wordRaw)
-			if n > 256 {
-				n = 256
-			}
-			for k := 0; k < n; k++ {
+			n := min(len(wordRaw), 256)
+			for k := range n {
 				c := wordRaw[k]
 				if c >= 'A' && c <= 'Z' {
 					scratch[k] = c + 32
@@ -246,6 +247,7 @@ func RedactBytesToWriter(w io.Writer, raw []byte, trie *Trie) {
 							targets:    ws.targets[targetsStart:],
 							minLength:  node.Meta.MinLength,
 							maxLength:  node.Meta.MaxLength,
+							hits:       node.Meta.Hits,
 						})
 					}
 				}
@@ -285,6 +287,7 @@ func RedactBytesToWriter(w io.Writer, raw []byte, trie *Trie) {
 
 		ws.claimed = append(ws.claimed, interval{r.matchStart, r.matchEnd})
 
+		resolvedBefore := len(ws.resolved)
 		for _, t := range r.targets {
 			actualStart := t.start
 			if len(t.redactAfterBytes) > 0 {
@@ -327,6 +330,11 @@ func RedactBytesToWriter(w io.Writer, raw []byte, trie *Trie) {
 			} else {
 				ws.resolved = append(ws.resolved, finalInt{start: actualStart, end: t.end, maskS: maskStr})
 			}
+		}
+		// Count the rule hit only when at least one target was actually redacted.
+		if len(ws.resolved) > resolvedBefore && r.hits != nil {
+			r.hits.Add(1)
+			trie.totalMatches.Add(1)
 		}
 	}
 

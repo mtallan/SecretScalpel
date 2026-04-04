@@ -2,75 +2,122 @@
 
 <p align="center"><img src="logo.png" width="400"/></p>
 
-A semantic log sanitization engine for security teams. Built to strip credentials from alert data before it reaches your SOAR, your case comments, and your customers.
+A log redaction tool that strips credentials from command-line strings by understanding command structure rather than pattern matching.
 
 ## The Problem
 
-Windows alerts are full of credentials. `psexec` commands, `net use` strings, database connection strings with passwords inline. They flow from your SIEM into your SOAR, into case comments, into ticket descriptions, onto email distribution lists that your customers can read.
+When you're shipping customer logs to a SIEM or SOAR, command-line strings come with them — `psexec`, `net use`, `sqlcmd`, connection strings. Those commands often contain passwords in plaintext.
 
-Most teams handle this with regex. Regex doesn't understand context. It doesn't know that `-p` means password in `psexec` but not in `grep`. It fires on things it shouldn't and misses things it should catch.
+The obvious approach is regex. The problem is that commands like `psexec -u admin -p SuperSecret! cmd.exe` don't have a reliable pattern you can regex for. `-p` means password there but means something else in a hundred other tools. You end up writing one rule for `psexec -p`, another for `psexec -p` with a host argument, another for `psexec64`, another for the attached form `-pPassword`. The rules compound, they interact in unpredictable ways, and a pattern broad enough to catch everything ends up firing on things it shouldn't.
 
-Generic PII/DLP cleaners often rely on slow, probabilistic heuristics designed for human documents. When applied to high-volume technical logs, they suffer from low throughput and high false-positive rates (flagging git hashes or UUIDs as secrets).
+## How SecretScalpel Solves It
 
-SecretScalpel uses a token-aware rule engine that understands command structure. It knows that in `net use Z: \\server P@ssw0rd domain` the fourth token is a credential — not because it matched a pattern on the word "password", but because it understands the structure of a Windows `net use` command.
-
-## How It Works
-
-SecretScalpel breaks each log line into words (tokens) and compares the structure against a dictionary of known command patterns. Rules match on sequences of tokens, not just raw strings. A rule like:
+Instead of pattern matching on the content of tokens, it matches on their position. You define what a command looks like:
 
 ```json
-{ "id": "WIN-PSEXEC", "phrase": ["psexec", "-u", "<any>", "-p", "<REDACT>"] }
+{ "phrase": ["psexec", "-u", "<any>", "-p", "<REDACT>"] }
 ```
 
-matches `psexec -u admin -p SuperSecret!` and redacts only the password token, leaving the rest of the line intact and parseable.
+That rule says: when you see `psexec`, followed by `-u`, followed by anything, followed by `-p`, the next token is a password — redact it. The password doesn't need to look like a password. Its position in the command is what identifies it.
 
-For patterns that genuinely require regex — URL basic auth, database connection strings, attached flag syntax — a small set of regex rules runs as a fallback. Everything else goes through the trie.
+This has a few practical advantages over a regex pipeline:
 
-Each input line is inspected independently. Lines starting with `{` are processed as JSON (string values walked, structure preserved); all other lines are processed as flat text. No mode flag required.
+- **Rules don't compound.** `<any>` absorbs optional tokens naturally, so one rule covers the variations that would otherwise need a dozen regex patterns.
+- **It doesn't over-redact.** The full command structure has to match. `psexec` has to actually be there.
+- **Overlap is explicit.** When two rules match the same region, priority determines which wins. No ambiguity.
+- **Coverage gaps are visible.** A missing rule means adding one JSON entry and one test case. You know exactly what's covered.
 
-## Performance
+For patterns where position genuinely doesn't work — URL basic auth, connection strings, formats with no reliable token anchor — there's a regex fallback. Those rules are small in number, explicitly marked, and guarded so they only run when a required character is present in the line. The goal is to keep the regex surface auditable rather than letting it grow into the thing you were trying to avoid.
 
-Benchmarked on an i9-13900K (24 cores):
+```bash
+$ echo 'psexec -u admin -p SuperSecret! cmd.exe' | secretscalpel
+psexec -u admin -p ************ cmd.exe
 
-| Scenario | Throughput (Bytes) | Network Equiv (Bits) |
-|---|---|---|
-| Realistic JSON log data (1 secret per 20 lines) | **~1020 MB/s** | **~8.2 Gbps** |
-| Realistic JSON log data (Single Core) | **~64 MB/s** | **~512 Mbps** |
-| Worst case (raw logs, secrets on ~80% of lines) | ~4 MB/s | ~32 Mbps |
+$ echo 'net use Z: \\server P@ssword domain' | secretscalpel
+net use Z: \\server ******** domain
 
-Realistic throughput on a single machine translates to over **80 TB/day** (or **~8.2 Gbps** wire speed). Single-core performance is **~64 MB/s** (~512 Mbps), making it efficient even in resource-constrained sidecar containers.
+$ echo '{"cmd": "net use Z: \\\\server P@ssword domain"}' | secretscalpel
+{"cmd": "net use Z: \\\\server ******** domain"}
+```
 
-The engine is optimized for the 99% of log lines that *don't* contain secrets. It uses a specialized dictionary lookup (Trie) that is significantly faster than standard Regex. It also employs advanced memory management techniques to minimize CPU usage, ensuring it can run alongside other workloads without impacting performance.
+## Where It's Used
 
-Honest caveat: the "worst-case" benchmark uses data where almost every line contains a credential, forcing the engine to run multiple regex passes and sort thousands of redaction targets per megabyte. Real production log data does not look like this. The ~1020 MB/s figure reflects actual MSSP workloads with structured JSON logs.
+Anywhere logs pass through before reaching a destination you don't fully control — a SOAR platform, a ticketing system, a customer-facing portal, a third-party SIEM. It reads from stdin and writes to stdout, so it fits into a Fluent Bit pipeline, a Lambda function, or any shell pipe without modification.
 
-## Rule Format
+## Installation
 
-Rules are plain JSON. They live in the `rules/` directory and are loaded at startup. No recompilation required.
+```bash
+go install github.com/mtallan/SecretScalpel@latest
+```
 
+Or build from source:
+
+```bash
+git clone https://github.com/mtallan/SecretScalpel
+cd SecretScalpel
+go build -o secretscalpel .
+```
+
+## Usage
+
+```bash
+# Pipe logs through
+cat app.log | secretscalpel
+
+# Show which rule matched each redaction
+echo 'psexec -u admin -p SuperSecret! cmd.exe' | secretscalpel -debug-rules
+
+# Custom mask string
+cat app.log | secretscalpel -mask '[REDACTED]'
+
+# Write a JSON stats report to stderr on exit (rules fired, bytes/lines processed)
+cat app.log | secretscalpel -stats 2>report.json
+
+# Use a custom rules directory
+cat app.log | secretscalpel -rules /etc/secretscalpel/rules
+
+# Validate rule files (useful in CI)
+secretscalpel -validate-rules
+
+# Health check — loads rules, prints OK, exits 0
+secretscalpel -health
+```
+
+**Flags:**
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-rules` | `./rules` | Path to rules directory |
+| `-mask` | `*` | Redaction mask character(s) |
+| `-debug-rules` | `false` | Replace redacted values with `[RULE-ID]` to identify which rule matched |
+| `-stats` | `false` | Write a JSON redaction summary to stderr on exit |
+| `-validate-rules` | — | Validate rule files and exit |
+| `-health` | — | Load rules, print OK, exit 0 |
+| `-version` | — | Print version and exit |
+
+## Rules
+
+Rules live in `rules/*.json` and are loaded at startup. No recompilation required.
+
+**Trie rules** — token sequence matching:
 ```json
-[
-  {
-    "id": "WIN-NET-USE",
-    "phrase": ["net", "use", "<any:^[\\\\/]+.*>", "<REDACT>"],
-    "enabled": true
-  },
-  {
-    "id": "WIN-PSEXEC-SEPARATED",
-    "phrase": ["psexec", "-u", "<any>", "-p", "<REDACT>"],
-    "enabled": true
-  }
-]
+{
+  "id": "WIN-PSEXEC-SEPARATED",
+  "phrase": ["psexec", "-u", "<any>", "-p", "<REDACT>"],
+  "priority": 0,
+  "enabled": true,
+  "min_length": 4
+}
 ```
 
-**Phrase tokens:**
-- Literal string — must match exactly (case-insensitive)
-- `<REDACT>` — matches any token and redacts it
-- `<any>` — matches any token without redacting
-- `<any:pattern>` — matches tokens whose text matches the regex pattern
-- `<redact:pattern>` — matches and redacts tokens matching the pattern
+Phrase tokens:
+- Literal — matches exactly (case-insensitive)
+- `<REDACT>` — matches any token, redacts it
+- `<any>` — matches any token, leaves it
+- `<any:pattern>` — matches tokens whose text matches the regex
+- `<redact:pattern>` — matches and redacts tokens matching the regex
 
-**Regex rules** (for patterns that can't be expressed as token sequences):
+**Regex rules** — for patterns that can't be expressed as token sequences:
 ```json
 {
   "id": "PHASE0-URI-BASIC-AUTH",
@@ -82,98 +129,60 @@ Rules are plain JSON. They live in the `rules/` directory and are loaded at star
 }
 ```
 
-The optional `required_byte` field skips regex evaluation entirely when the specified byte is absent from the input line — a cheap early-exit guard.
+`required_byte` skips the regex entirely if that byte isn't present in the input line.
 
-Rules are auditable, git-diffable, and reviewable by anyone on your team without touching Go code. Duplicate rule IDs across files are logged as warnings at startup.
+**JSON key rules** — fully redact values under specific keys regardless of content:
+```json
+{
+  "id": "JSON-KEY-SENTINELS",
+  "type": "json_key",
+  "phrase": ["password", "secret", "token", "api_key"],
+  "enabled": true
+}
+```
+
+Other rule fields: `mask` (per-rule mask override), `redact_after` (redact only after a delimiter within a token), `min_length`/`max_length` (skip redaction if the captured value is outside this length range).
 
 ## Included Rules
 
-SecretScalpel ships with rules covering common credential exposure patterns:
+121 rules across Windows, Linux, macOS, cloud CLIs, and third-party tools:
 
-**Windows:**
-- `net use` — UNC path authentication
-- `psexec` — both attached (`-pPassword`) and separated (`-p Password`) forms
-- `cmdkey` — credential manager
-- `runas` — user impersonation
-- `schtasks` — scheduled task credentials
-- `sqlcmd`, `wmic`, `appcmd` — database and management tooling
-- `az login`, `dsmod`, `netdom` — Azure CLI and AD tooling
-- `mstsc`, `rasdial` — remote access
-- PowerShell `ConvertTo-SecureString`, `Set-LocalUser`, `$env:PASSWORD = ...`
-- URL basic auth (`https://user:pass@host`)
-- Database connection strings (`Password=value;`)
-- Generic flag patterns (`--password=value`, `/p:value`)
+- **Windows:** `psexec`, `net use`, `cmdkey`, `runas`, `schtasks`, `sqlcmd`, `wmic`, `mstsc`, `rasdial`, PowerShell credential patterns, Mimikatz output
+- **Linux:** `mysql`, `psql`, `curl`, `openssl`, `ssh-keygen`, `docker login`, `ansible-vault`
+- **Cloud:** AWS CLI, `gcloud`, `az` keyvault, Kubernetes/Helm
+- **Third-party:** Impacket, SQLPlus, SVN, `git clone` with embedded credentials
+- **Generic:** JWT tokens, PEM private keys, AWS access key IDs, bearer tokens, URL basic auth, database connection strings
 
-**Linux & Cloud:**
-- `curl` basic auth, `mysql`/`psql` command-line credentials
-- `openssl`, `gpg`, `ssh-keygen` passphrase flags
-- `git clone` HTTPS with embedded credentials
-- AWS, GCP (`gcloud`), and Azure CLI credential flags
+## Stats & Compliance Reporting
 
-**Third-party:**
-- Impacket credential syntax (`user:pass@host`)
-- `plink` (PuTTY Link) `-pw` password flag
-- JSON sensitive key redaction (API keys, tokens, secrets in structured logs)
+The `-stats` flag writes a JSON summary to stderr when the process exits:
 
-**Generic patterns:**
-- JWT tokens (bearer headers and `token=` assignments)
-- PEM private keys (RSA, EC, OpenSSH, DSA)
-- AWS access key IDs (`AKIA*`, `ASIA*`, `AROA*`)
-
-## Usage
-
-### CLI
-
-```bash
-# Redact raw log lines from stdin
-echo 'psexec -u admin -p SuperSecret! cmd.exe' | secretscalpel
-
-# Redact JSON log data — auto-detected, structure preserved
-echo '{"log": "net use Z: \\server P@ssword domain"}' | secretscalpel
-
-# Mixed stream — each line handled independently
-cat app.log | secretscalpel
-
-# Use a custom redaction string
-echo 'psexec -u admin -p SuperSecret! cmd.exe' | secretscalpel --mask '[REDACTED]'
-
-# Show which rule matched (useful when writing or debugging rules)
-echo 'psexec -u admin -p SuperSecret! cmd.exe' | secretscalpel --debug-rules
-
-# Validate rule files (useful in CI before deploy)
-secretscalpel --validate-rules
-
-# Health check (load rules, print OK, exit 0)
-secretscalpel --health
-
-# Print version
-secretscalpel --version
+```json
+{
+  "session_start": "2026-04-04T20:10:59Z",
+  "session_end": "2026-04-04T20:10:59Z",
+  "duration_ms": 43,
+  "bytes_processed": 524288,
+  "lines_processed": 4821,
+  "total_matches": 12,
+  "rule_hits": {
+    "WIN-PSEXEC-NOHOST": 8,
+    "NET-USE-DRIVE-PASS": 4
+  }
+}
 ```
 
-**Flags:**
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `-rules` | `./rules` | Path to rules directory |
-| `-mask` | `*` | Redaction mask character(s) |
-| `-debug-rules` | `false` | Replace redacted values with `[RULE-ID]` to show which rule matched |
-| `-validate-rules` | — | Validate rule files and exit (0=ok, 1=error) |
-| `-health` | — | Verify rules load, print OK, exit 0 |
-| `-version` | — | Print version and exit |
-
-### Docker
+Only rules that actually fired appear in `rule_hits`. The redacted log output goes to stdout as normal, so the two streams can be separated:
 
 ```bash
-docker build -t secretscalpel .
-
-# Pipe logs through the container
-cat app.log | docker run -i --rm secretscalpel
-
-# With custom rules directory
-cat app.log | docker run -i --rm -v /my/rules:/rules secretscalpel -rules /rules
+cat app.log | secretscalpel -stats 2>report.json | gzip > redacted.log.gz
 ```
 
-### As a library
+**Important:** stats are per-invocation, not cumulative. Each time the binary runs it starts from zero. If your shipper calls SecretScalpel once per batch, you get one JSON blob per batch. Aggregating those into daily totals — summing `rule_hits` across invocations — is the job of whatever is collecting your stderr output (CloudWatch Logs, Splunk, Elastic, etc.). The query depends on your stack, but the data is there if stderr is being captured.
+
+The per-rule counts are the most actionable signal. A spike in `WIN-PSEXEC-NOHOST` means credentials are appearing in logs from psexec activity — that's worth knowing independently of the redaction itself.
+
+## As a Library
 
 ```go
 import "github.com/mtallan/SecretScalpel/redactor"
@@ -181,35 +190,19 @@ import "github.com/mtallan/SecretScalpel/redactor"
 trie := redactor.NewTrie("*", 0, 0)
 redactor.LoadRulesFromDir("./rules", trie)
 
-// Redact a raw log line
+// Redact a raw line
 var buf bytes.Buffer
 redactor.RedactBytesToWriter(&buf, []byte(line), trie)
 
-// Redact JSON log data while preserving structure
+// Redact a JSON line
 redacted := redactor.RedactAllJSONStrings([]byte(jsonLine), trie)
 
-// Stream processing with parallel workers
+// Stream processing
 err := redactor.ProcessStream(os.Stdin, os.Stdout, trie, 0) // 0 = NumCPU
+
+// Stats snapshot after processing
+stats := trie.Stats()
 ```
-
-### Auto-detect mode
-
-SecretScalpel inspects each line independently:
-
-- Lines starting with `{` → **JSON mode** (`RedactAllJSONStrings`) — walks string values only, leaving keys and structure intact. Output remains valid, parseable JSON. Keys listed in `json_keys.json` have their values fully star-redacted regardless of content.
-- All other lines → **Raw mode** (`RedactBytesToWriter`) — processes the line as flat text. Use for plaintext logs, syslog, CEF format.
-
-This means a mixed stream of raw and JSON lines is handled correctly with no configuration.
-
-## Limitations
-
-**SecretScalpel is a sanitization tool, not a DLP system.** It does not:
-- Detect all possible credential formats — only patterns covered by loaded rules
-- Guarantee zero false negatives — novel credential formats without rules will pass through
-- Replace network-level DLP or CASB tooling
-- Handle binary log formats
-
-If a credential format isn't covered by a rule, it won't be redacted. Test your rules against your actual alert data before deploying in a production pipeline.
 
 ## Architecture
 
@@ -218,7 +211,7 @@ Input stream
      │
      ▼
 ProcessStream (orchestrator)
-     │ chunks input into 256KB batches aligned on newlines, fans out to worker pool
+     │ chunks input into 256KB batches, fans out to worker pool
      ▼
 Per-line auto-detect
      │
@@ -227,25 +220,25 @@ Per-line auto-detect
      │
      └── Raw line   → RedactBytesToWriter
                       │
-                      ├── Phase 0: Regex rules (URL auth, connection strings)
-                      │   each rule has an optional required_byte guard;
-                      │   the rule is skipped entirely if its byte is absent
+                      ├── Phase 0: Regex rules
+                      │   skipped entirely if required_byte absent from line
                       │
                       └── Phase 1: Trie engine
-                          tokenizes line → multi-path sliding window → matches rule phrases
-                          redacts matched tokens, resolves overlaps by match span length
+                          tokenize → sliding window → match phrases
+                          sort by priority → resolve overlaps → apply masks
 ```
 
-The trie uses a recycled `EngineWorkspace` pool to minimize per-line allocations. On clean lines (no secrets) the input slice is returned without copying.
+Lines exceeding 1MB are dropped with a warning. The engine workspace is pooled to avoid per-line allocations.
 
-Lines exceeding 1MB are dropped with a warning to prevent unbounded memory growth and pathological regex backtracking.
+## Limitations
+
+SecretScalpel only redacts patterns covered by loaded rules. If a credential format doesn't have a rule, it passes through unmodified. It is not a DLP system and does not replace network-level controls.
+
+Test your rules against your actual log data before deploying.
 
 ## Contributing
 
-Rule contributions are the highest-value contribution. Please read CONTRIBUTING.md for a detailed guide on:
-- Rule JSON format and advanced fields
-- How to add test cases
-- Performance best practices
+Rule contributions are the most valuable kind. See CONTRIBUTING.md for the rule format, how to add test cases, and how to run the test suite.
 
 ## License
 

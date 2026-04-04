@@ -32,6 +32,7 @@
       "(?i)gcloud\\s+sql\\s+users\\s+set-password(?:.*?)(?:--password(?:=|\\s+)([^'\\\"\\s]+))"
     ],
     "isRegex": true,
+    "required_byte": "-",
     "priority": 1,
     "enabled": true,
     "min_length": 5

@@ -74,6 +74,7 @@ func ProcessStream(r io.Reader, w io.Writer, trie *Trie, workers int) error {
 				// Process line by line so JSON and raw lines in the same stream are
 				// each routed to the correct redactor.
 				remaining := job.Data.Bytes()
+				var lineCount int64
 				for len(remaining) > 0 {
 					nl := bytes.IndexByte(remaining, '\n')
 					var line []byte
@@ -84,6 +85,7 @@ func ProcessStream(r io.Reader, w io.Writer, trie *Trie, workers int) error {
 						line = remaining
 						remaining = nil
 					}
+					lineCount++
 					trimmed := bytes.TrimLeft(line, " \t\r\n")
 					if len(trimmed) > 0 && trimmed[0] == '{' {
 						lineBuf := RedactAllJSONStringsToBuffer(line, trie)
@@ -94,6 +96,7 @@ func ProcessStream(r io.Reader, w io.Writer, trie *Trie, workers int) error {
 						RedactBytesToWriter(resultBuf, line, trie)
 					}
 				}
+				trie.linesIn.Add(lineCount)
 
 				job.Data.Reset()
 				bufferPool.Put(job.Data)

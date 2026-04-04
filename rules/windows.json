@@ -6,6 +6,7 @@
       "(?i)(?:--|/)(?:password|pass|pwd|pw)[:=]['\"]?([^'\"\\s]+)['\"]?"
     ],
     "isRegex": true,
+    "required_byte": "=",
     "priority": 4,
     "enabled": true,
     "min_length": 3
@@ -489,7 +490,7 @@
   {
     "id": "WIN-CMDKEY-ATTACHED",
     "phrase": [
-      "cmdkey",
+      "<any:cmdkey(\\.exe)?$>",
       "<any>",
       "<any>",
       "<redact:^/pass:.*>"

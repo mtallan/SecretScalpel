@@ -5,6 +5,7 @@
       "(?i)\\bsecurity\\s+(?:(?:add|find|delete)-?(?:internet|generic)-?password|(?:add|find|delete)\\s+(?:internet|generic)\\s+password)\\b[^\\n]*?\\s-w\\s+([^-\\s]\\S*)"
     ],
     "isRegex": true,
+    "required_byte": "-",
     "priority": 1,
     "enabled": true,
     "comment": "Matches macOS 'security' keychain subcommands in both hyphenated (add-internet-password) and space-separated (add internet password) forms. Anchored to known subcommands to prevent false positives.",

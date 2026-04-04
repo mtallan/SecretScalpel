@@ -3,7 +3,9 @@
     "id": "GENERIC-JWT",
     "comment": "JWT tokens: always start with eyJ (base64url of '{\"'), have two dot-separated sections. Min length prevents short false matches.",
     "isRegex": true,
-    "phrase": ["\\b(eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]*)"],
+    "phrase": [
+      "\\b(eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]*)"
+    ],
     "min_length": 30,
     "priority": 5,
     "enabled": true
@@ -12,7 +14,9 @@
     "id": "GENERIC-BEARER-TOKEN",
     "comment": "HTTP Authorization Bearer tokens. Catches non-JWT opaque tokens (GitHub ghp_, Slack xoxb-, etc.) that GENERIC-JWT won't match. Lower priority so JWT wins on overlap.",
     "isRegex": true,
-    "phrase": ["(?i)\\bbearer\\s+([-A-Za-z0-9_.+/=]{20,})"],
+    "phrase": [
+      "(?i)\\bbearer\\s+([-A-Za-z0-9_.+/=]{20,})"
+    ],
     "min_length": 20,
     "priority": 8,
     "enabled": true
@@ -21,7 +25,9 @@
     "id": "GENERIC-PEM-PRIVATE-KEY",
     "comment": "PEM private key material between BEGIN and END markers. Handles single-line log representations where newlines were stripped or replaced with spaces.",
     "isRegex": true,
-    "phrase": ["-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----([A-Za-z0-9+/=\\s]*)-----END"],
+    "phrase": [
+      "-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----([A-Za-z0-9+/=\\s]*)-----END"
+    ],
     "required_byte": "-",
     "priority": 5,
     "enabled": true
@@ -30,7 +36,9 @@
     "id": "GENERIC-AWS-ACCESS-KEY",
     "comment": "AWS IAM access key IDs (AKIA/ASIA/AROA prefix, 20 chars total). Redacting key IDs prevents targeted credential attacks even without the secret key.",
     "isRegex": true,
-    "phrase": ["\\b((?:AKIA|ASIA|AROA)[A-Z0-9]{16})\\b"],
+    "phrase": [
+      "\\b((?:AKIA|ASIA|AROA)[A-Z0-9]{16})\\b"
+    ],
     "min_length": 20,
     "max_length": 20,
     "priority": 5,

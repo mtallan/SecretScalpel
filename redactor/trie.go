@@ -4,6 +4,7 @@ import (
 	"log/slog"
 	"regexp"
 	"strings"
+	"sync/atomic"
 )
 
 type RegexRule struct {
@@ -15,7 +16,8 @@ type RegexRule struct {
 	Priority         int
 	MinLength        int
 	MaxLength        int
-	RequiredByte     byte // if non-zero, skip this rule unless this byte is present in the input
+	RequiredByte     byte         // if non-zero, skip this rule unless this byte is present in the input
+	Hits             *atomic.Int64 // counts actual redactions produced by this rule
 }
 
 type RegexEdge struct {
@@ -32,6 +34,7 @@ type RuleMeta struct {
 	Priority         int
 	MinLength        int
 	MaxLength        int
+	Hits             *atomic.Int64 // counts actual redactions produced by this rule
 }
 
 type TrieNode struct {
@@ -55,6 +58,12 @@ type Trie struct {
 	JSONSensitiveKeys *JSONKeyTrieNode
 	RuleCount         int  // total rules loaded (trie + regex + json_key)
 	DebugRules        bool // if true, replace redacted values with [RULE-ID] instead of the mask
+
+	// Stats counters — written with atomic ops, safe for concurrent use.
+	ruleHits     map[string]*atomic.Int64 // per-rule hit counters; populated at load time, read-only thereafter
+	totalMatches atomic.Int64             // sum of all rule hits
+	bytesIn      atomic.Int64             // total input bytes processed
+	linesIn      atomic.Int64             // total log lines processed
 }
 
 func NewTrie(mask string, min int, max int) *Trie {
@@ -62,6 +71,7 @@ func NewTrie(mask string, min int, max int) *Trie {
 		Root:              &TrieNode{Children: make(map[string]*TrieNode)},
 		GlobalMask:        mask,
 		JSONSensitiveKeys: &JSONKeyTrieNode{Children: make(map[byte]*JSONKeyTrieNode)},
+		ruleHits:          make(map[string]*atomic.Int64),
 	}
 }
 
@@ -92,10 +102,12 @@ func (t *Trie) AddRegexRule(id, pattern, mask string, min, max int, redactAfter 
 		slog.Error("Invalid regex in rule", "rule_id", id, "pattern", pattern, "error", err)
 		return
 	}
+	hits := new(atomic.Int64)
+	t.ruleHits[id] = hits
 	t.RuleCount++
 	t.RegexRules = append(t.RegexRules, &RegexRule{
 		ID: id, Re: re, Mask: mask, RedactAfter: redactAfter, RedactAfterBytes: []byte(redactAfter), Priority: priority,
-		MinLength: min, MaxLength: max, RequiredByte: requiredByte,
+		MinLength: min, MaxLength: max, RequiredByte: requiredByte, Hits: hits,
 	})
 }
 
@@ -154,11 +166,13 @@ func (t *Trie) AddRule(id string, phrase []string, mask string, min, max int, re
 		curr = curr.Children[key]
 	}
 
+	hits := new(atomic.Int64)
+	t.ruleHits[id] = hits
 	t.RuleCount++
 	curr.Meta = &RuleMeta{
 		ID: id, RedactIndices: redactIndices, CustomMask: mask,
 		RedactAfter: redactAfter, RedactAfterBytes: []byte(redactAfter), Priority: priority,
-		MinLength: min, MaxLength: max,
+		MinLength: min, MaxLength: max, Hits: hits,
 	}
 	if len(phrase) > t.MaxDepth {
 		t.MaxDepth = len(phrase)

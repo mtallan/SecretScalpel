@@ -1,0 +1,80 @@
+[
+  {
+    "id": "K8S-KUBECTL-CREDS-PASSWORD",
+    "comment": "Matches kubectl config set-credentials with --password flag (attached = or separated space form).",
+    "phrase": [
+      "(?i)\\bkubectl\\b.*?\\bconfig\\s+set-credentials\\b.*?--password(?:=|\\s+)([^\\s'\"]+)"
+    ],
+    "isRegex": true,
+    "required_byte": "-",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "K8S-KUBECTL-CREDS-TOKEN",
+    "comment": "Matches kubectl config set-credentials with --token flag (attached = or separated space form).",
+    "phrase": [
+      "(?i)\\bkubectl\\b.*?\\bconfig\\s+set-credentials\\b.*?--token(?:=|\\s+)([^\\s'\"]+)"
+    ],
+    "isRegex": true,
+    "required_byte": "-",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 10
+  },
+  {
+    "id": "K8S-KUBECTL-SECRET-LITERAL",
+    "comment": "Matches kubectl create secret with --from-literal where the key contains a credential keyword.",
+    "phrase": [
+      "(?i)\\bkubectl\\b.*?\\bcreate\\s+secret\\b.*?--from-literal=[\\w-]*(?:password|secret|token|key)[\\w-]*=([^\\s'\"]+)"
+    ],
+    "isRegex": true,
+    "required_byte": "-",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 3
+  },
+  {
+    "id": "K8S-HELM-REGISTRY-PASSWORD",
+    "comment": "Matches helm registry login with --password flag.",
+    "phrase": [
+      "helm",
+      "registry",
+      "login",
+      "<any>",
+      "--password",
+      "<REDACT>"
+    ],
+    "priority": 0,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "K8S-HELM-REGISTRY-PASSWORD-SHORT",
+    "comment": "Matches helm registry login with -p flag.",
+    "phrase": [
+      "helm",
+      "registry",
+      "login",
+      "<any>",
+      "-p",
+      "<redact:^[^-].*>"
+    ],
+    "priority": 0,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "K8S-HELM-SET-PASSWORD",
+    "comment": "Matches helm upgrade/install --set (or --set-string) with a password/secret/token key.",
+    "phrase": [
+      "(?i)\\bhelm\\s+(?:upgrade|install)\\b.*?--set(?:-string)?\\s+[\\w.]*(?:password|secret|token)[\\w.]*=([^\\s,'\"]+)"
+    ],
+    "isRegex": true,
+    "required_byte": "-",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 3
+  }
+]

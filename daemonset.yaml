@@ -23,7 +23,7 @@ spec:
         # then scrape this container's output.
         command: ["/bin/sh", "-c"]
         args:
-          - tail -F /var/log/syslog | /app/secretscalpel -json=false -workers=2
+          - tail -F /var/log/syslog | /app/secretscalpel -rules /rules -stats 2>/var/log/secretscalpel-stats.json
         resources:
           limits:
             cpu: "200m"
