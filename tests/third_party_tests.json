@@ -63,5 +63,35 @@
     "id": "3p-git-auth",
     "input": "git clone https://user:ghp_MySecretToken123@github.com/org/repo.git",
     "expected": "git clone https://user:********************@github.com/org/repo.git"
+  },
+  {
+    "id": "3P-ZIP-PASSWORD-SHORT",
+    "input": "zip -r -P ZipFilePass archive.zip /docs/",
+    "expected": "zip -r -P *********** archive.zip /docs/"
+  },
+  {
+    "id": "3P-ZIP-PASSWORD-LONG",
+    "input": "zip -r --password ZipLongPass archive.zip /docs/",
+    "expected": "zip -r --password *********** archive.zip /docs/"
+  },
+  {
+    "id": "3P-RAR-PASSWORD-P",
+    "input": "rar a -pRarFilePass archive.rar files/",
+    "expected": "rar a -p*********** archive.rar files/"
+  },
+  {
+    "id": "3P-RAR-PASSWORD-HP",
+    "input": "rar a -hpRarHdrPass archive.rar files/",
+    "expected": "rar a -hp********** archive.rar files/"
+  },
+  {
+    "id": "3P-NUGET-PASSWORD",
+    "input": "nuget sources add -name foo.bar -source C:\\NuGet\\local -username foo -password bar -StorePasswordInClearText",
+    "expected": "nuget sources add -name foo.bar -source C:\\NuGet\\local -username foo -password *** -StorePasswordInClearText"
+  },
+  {
+    "id": "3P-NUGET-PASSWORD-PAT",
+    "input": "nuget sources add -name MyAzureDevOps -source https://pkgs.dev.azure.com/org/_packaging/feed/nuget/v3/index.json -username ignored -password ghp_MyPersonalToken123",
+    "expected": "nuget sources add -name MyAzureDevOps -source https://pkgs.dev.azure.com/org/_packaging/feed/nuget/v3/index.json -username ignored -password **********************"
   }
 ]

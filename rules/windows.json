@@ -70,7 +70,7 @@
     "enabled": true,
     "min_length": 3
   },
-  {
+{
     "id": "PS-ENV-VAR-ASSIGNMENT",
     "comment": "Matches PowerShell environment variable assignments like $env:PASSWORD = secret. Token sequence: <$env:VAR> <=> <value>.",
     "phrase": [
@@ -231,24 +231,10 @@
     "min_length": 4
   },
   {
-    "id": "WIN-PSEXEC",
+    "id": "WIN-SYSINTERNALS-NOHOST",
+    "comment": "Generic Sysinternals ps* tool: credential via -u/-p flags, no remote host. Covers psexec, psservice, pspasswd, pslist, psshutdown, pssuspend, psgetsid, etc.",
     "phrase": [
-      "psexec",
-      "<any>",
-      "u",
-      "<any>",
-      "p",
-      "<REDACT>"
-    ],
-    "priority": 0,
-    "enabled": true,
-    "min_length": 4
-  },
-  {
-    "id": "WIN-PSEXEC-SEPARATED",
-    "phrase": [
-      "psexec",
-      "<any>",
+      "<any:(?i)^ps[a-z]+(64)?(\\.exe)?$>",
       "-u",
       "<any>",
       "-p",
@@ -256,52 +242,13 @@
     ],
     "priority": 0,
     "enabled": true,
-    "min_length": 4
+    "min_length": 1
   },
   {
-    "id": "WIN-PSEXEC-SEPARATED-CMD",
+    "id": "WIN-SYSINTERNALS-SEPARATED",
+    "comment": "Generic Sysinternals ps* tool: credential via -u/-p flags with remote host.",
     "phrase": [
-      "psexec",
-      "<any>",
-      "-u",
-      "<any>",
-      "-p",
-      "<REDACT>",
-      "<any>"
-    ],
-    "priority": 0,
-    "enabled": true,
-    "min_length": 4
-  },
-  {
-    "id": "WIN-PSEXEC-NOHOST",
-    "phrase": [
-      "psexec",
-      "-u",
-      "<any>",
-      "-p",
-      "<REDACT>"
-    ],
-    "priority": 0,
-    "enabled": true,
-    "min_length": 4
-  },
-  {
-    "id": "WIN-PSEXEC-ATTACHED",
-    "phrase": [
-      "psexec",
-      "<any:^-u.+>",
-      "<redact:^-p.+>"
-    ],
-    "redact_after": "-p",
-    "priority": 0,
-    "enabled": true,
-    "min_length": 5
-  },
-  {
-    "id": "WIN-PSEXEC64-SEPARATED",
-    "phrase": [
-      "psexec64",
+      "<any:(?i)^ps[a-z]+(64)?(\\.exe)?$>",
       "<any>",
       "-u",
       "<any>",
@@ -310,80 +257,38 @@
     ],
     "priority": 0,
     "enabled": true,
-    "min_length": 4
+    "min_length": 1
   },
   {
-    "id": "WIN-PSEXEC64-SEPARATED-CMD",
+    "id": "WIN-SYSINTERNALS-P-ONLY",
+    "comment": "Generic Sysinternals ps* tool: -p flag only, no -u, no remote host.",
     "phrase": [
-      "psexec64",
-      "<any>",
-      "-u",
-      "<any>",
+      "<any:(?i)^ps[a-z]+(64)?(\\.exe)?$>",
       "-p",
-      "<REDACT>",
-      "<any>"
+      "<REDACT>"
     ],
     "priority": 0,
     "enabled": true,
-    "min_length": 4
+    "min_length": 1
   },
   {
-    "id": "WIN-PSEXEC64-NOHOST",
+    "id": "WIN-SYSINTERNALS-P-ONLY-HOST",
+    "comment": "Generic Sysinternals ps* tool: -p flag only with remote host.",
     "phrase": [
-      "psexec64",
-      "-u",
+      "<any:(?i)^ps[a-z]+(64)?(\\.exe)?$>",
       "<any>",
       "-p",
       "<REDACT>"
     ],
     "priority": 0,
     "enabled": true,
-    "min_length": 4
+    "min_length": 1
   },
   {
-    "id": "WIN-PSEXEC64-ATTACHED",
+    "id": "WIN-PSEXEC-ANY-ATTACHED",
+    "comment": "Consolidated rule for psexec, psexec64, and psexec64.exe with attached flags.",
     "phrase": [
-      "psexec64",
-      "<any:^-u.+>",
-      "<redact:^-p.+>"
-    ],
-    "redact_after": "-p",
-    "priority": 0,
-    "enabled": true,
-    "min_length": 5
-  },
-  {
-    "id": "WIN-PSEXEC-EXE-SEPARATED",
-    "phrase": [
-      "psexec.exe",
-      "<any>",
-      "-u",
-      "<any>",
-      "-p",
-      "<REDACT>"
-    ],
-    "priority": 0,
-    "enabled": true,
-    "min_length": 4
-  },
-  {
-    "id": "WIN-PSEXEC64-EXE-SEPARATED",
-    "phrase": [
-      "psexec64.exe",
-      "<any>",
-      "-u",
-      "<any>",
-      "-p",
-      "<REDACT>"
-    ],
-    "priority": 0,
-    "enabled": true,
-    "min_length": 4
-  },
-  {
-    "id": "WIN-PSEXEC64-EXE-ATTACHED",
-    "phrase": [
-      "psexec64.exe",
+      "<any:(?i)^psexec(64)?(\\.exe)?$>",
       "<any:^-u.+>",
       "<redact:^-p.+>"
     ],
@@ -698,15 +603,29 @@
     "min_length": 5
   },
   {
-    "id": "WIN-PSEXEC-P-ONLY",
+    "id": "WIN-PSPASSWD-NEWPASSWORD-HOST",
+    "comment": "PsPasswd new password positional argument with remote host: pspasswd \\\\host username newpassword",
     "phrase": [
-      "psexec",
-      "-p",
+      "<any:(?i)^pspasswd(64)?(\\.exe)?$>",
+      "<any:^\\\\\\\\>",
+      "<any:^[^-]>",
       "<REDACT>"
     ],
-    "priority": 0,
+    "priority": 1,
     "enabled": true,
-    "min_length": 4
+    "min_length": 1
+  },
+  {
+    "id": "WIN-PSPASSWD-NEWPASSWORD-LOCAL",
+    "comment": "PsPasswd new password positional argument on local system: pspasswd username newpassword",
+    "phrase": [
+      "<any:(?i)^pspasswd(64)?(\\.exe)?$>",
+      "<any:^[^-]>",
+      "<REDACT>"
+    ],
+    "priority": 1,
+    "enabled": true,
+    "min_length": 1
   },
   {
     "id": "NET-USER-SET",
@@ -716,41 +635,6 @@
       "user",
       "<any>",
       "<redact:^[^/-].*>"
-    ],
-    "priority": 0,
-    "enabled": true,
-    "min_length": 4
-  },
-  {
-    "id": "WIN-PSEXEC-P-ONLY-HOST",
-    "phrase": [
-      "psexec",
-      "<any>",
-      "-p",
-      "<REDACT>"
-    ],
-    "priority": 0,
-    "enabled": true,
-    "min_length": 4
-  },
-  {
-    "id": "WIN-PSEXEC64-P-ONLY",
-    "phrase": [
-      "psexec64",
-      "-p",
-      "<REDACT>"
-    ],
-    "priority": 0,
-    "enabled": true,
-    "min_length": 4
-  },
-  {
-    "id": "WIN-PSEXEC64-P-ONLY-HOST",
-    "phrase": [
-      "psexec64",
-      "<any>",
-      "-p",
-      "<REDACT>"
     ],
     "priority": 0,
     "enabled": true,

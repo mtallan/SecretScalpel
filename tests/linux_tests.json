@@ -25,29 +25,29 @@
     "expected": "docker login --username bob --password **************"
   },
   {
-    "id": "LNX-MYSQL-P-ATTACHED",
-    "input": "mysql -u root -pMyPassword123",
-    "expected": "mysql -u root -p*************"
-  },
-  {
-    "id": "LNX-MYSQL-P-SEPARATED",
+    "id": "LNX-MYSQL-FAMILY-P-SEPARATED",
     "input": "mysql -u root -p Password123",
     "expected": "mysql -u root -p ***********"
   },
   {
-    "id": "LNX-MYSQL-PASSWORD-LONG",
-    "input": "mysql -u root --password Password123",
-    "expected": "mysql -u root --password ***********"
-  },
-  {
-    "id": "LNX-MYSQLDUMP-P-SEPARATED",
-    "input": "mysqldump -u root -p Password123 mydb",
-    "expected": "mysqldump -u root -p *********** mydb"
-  },
-  {
-    "id": "LNX-MYSQLDUMP-PASSWORD-LONG",
+    "id": "LNX-MYSQL-FAMILY-PASSWORD",
     "input": "mysqldump -u root --password Password123 mydb",
     "expected": "mysqldump -u root --password *********** mydb"
+  },
+  {
+    "id": "LNX-MYSQL-FAMILY-P-ATTACHED",
+    "input": "mysqladmin -u root -pMyPassword123 status",
+    "expected": "mysqladmin -u root -p************* status"
+  },
+  {
+    "id": "LNX-MYSQL-FAMILY-MARIADB-VARIANT",
+    "input": "mariadb-slap -u root -p MySecret --concurrency=50",
+    "expected": "mariadb-slap -u root -p ******** --concurrency=50"
+  },
+  {
+    "id": "LNX-MYSQL-FAMILY-MARIADB-BASE",
+    "input": "mariadb -u root -pMyPassword123",
+    "expected": "mariadb -u root -p*************"
   },
   {
     "id": "LNX-PSQL-PASSWORD-SHORT",
@@ -170,11 +170,6 @@
     "expected": "sudo -S apt update"
   },
   {
-    "id": "lnx-mysqldump-p-attached",
-    "input": "mysqldump -u root -pPassword123 mydb",
-    "expected": "mysqldump -u root -p*********** mydb"
-  },
-  {
     "id": "lnx-ftp-pass",
     "input": "ftp ftp.example.com username MyPassword",
     "expected": "ftp ftp.example.com username **********"
@@ -188,5 +183,25 @@
     "id": "lnx-gpupdate-p",
     "input": "gpupdate -p MyPassword",
     "expected": "gpupdate -p **********"
+  },
+  {
+    "id": "3P-CURL-PROXY-U",
+    "input": "curl -U admin:ProxyPass123 https://example.com",
+    "expected": "curl -U ****************** https://example.com"
+  },
+  {
+    "id": "3P-CURL-PROXY-USER",
+    "input": "curl --proxy-user admin:ProxyPass123 https://example.com",
+    "expected": "curl --proxy-user ****************** https://example.com"
+  },
+  {
+    "id": "3P-CURL-PASS",
+    "input": "curl --pass MyKeyPassphrase --key client.key https://example.com",
+    "expected": "curl --pass *************** --key client.key https://example.com"
+  },
+  {
+    "id": "3P-CURL-TLSPASSWORD",
+    "input": "curl --tlspassword MyTLSSecret https://example.com",
+    "expected": "curl --tlspassword *********** https://example.com"
   }
 ]

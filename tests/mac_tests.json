@@ -43,5 +43,20 @@
     "id": "MAC-SECURITY-NEGATIVE-W-POLICY-CONTEXT",
     "input": "check security policy -w high severity",
     "expected": "check security policy -w high severity"
+  },
+  {
+    "id": "MAC-DSCL-P-FLAG",
+    "input": "dscl -u admin -P AdminP@ss . -read /Users/alice",
+    "expected": "dscl -u admin -P ********* . -read /Users/alice"
+  },
+  {
+    "id": "MAC-DSCL-PASSWD-ONE-ARG",
+    "input": "dscl . -passwd /Users/alice NewP@ss123",
+    "expected": "dscl . -passwd /Users/alice **********"
+  },
+  {
+    "id": "MAC-DSCL-PASSWD-TWO-ARG",
+    "input": "dscl . -passwd /Users/alice OldP@ss123 NewP@ss456",
+    "expected": "dscl . -passwd /Users/alice OldP@ss123 **********"
   }
 ]

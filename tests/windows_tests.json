@@ -30,11 +30,6 @@
     "expected": "certutil p *************"
   },
   {
-    "id": "WIN-PSEXEC-P",
-    "input": "psexec \\\\host u bob p MySecret cmd",
-    "expected": "psexec \\\\host u bob p ******** cmd"
-  },
-  {
     "id": "WIN-SQLCMD-P",
     "input": "sqlcmd u sa p MySecret",
     "expected": "sqlcmd u sa p ********"
@@ -508,5 +503,70 @@
     "id": "win-winrs-separated",
     "input": "winrs \\\\server -u admin -p MySecret ipconfig",
     "expected": "winrs \\\\server -u admin -p ******** ipconfig"
+  },
+  {
+    "id": "WIN-PSPASSWD-NOHOST",
+    "input": "pspasswd -u admin -p AdminPass jdoe NewPass123",
+    "expected": "pspasswd -u admin -p ********* jdoe NewPass123"
+  },
+  {
+    "id": "WIN-PSPASSWD-SEPARATED",
+    "input": "pspasswd64 \\\\workstation64 -u admin -p AdminPass jdoe NewPass123",
+    "expected": "pspasswd64 \\\\workstation64 -u admin -p ********* jdoe NewPass123"
+  },
+  {
+    "id": "WIN-PSPASSWD-P-ONLY",
+    "input": "pspasswd -p AdminPass jdoe NewPass123",
+    "expected": "pspasswd -p ********* jdoe NewPass123"
+  },
+  {
+    "id": "WIN-PSPASSWD-NEWPASSWORD-HOST",
+    "input": "pspasswd.exe \\\\workstation64 jdoe password567",
+    "expected": "pspasswd.exe \\\\workstation64 jdoe ***********"
+  },
+  {
+    "id": "WIN-PSPASSWD-NEWPASSWORD-LOCAL",
+    "input": "pspasswd64.exe jdoe password567",
+    "expected": "pspasswd64.exe jdoe ***********"
+  },
+  {
+    "id": "WIN-PSSERVICE-NOHOST",
+    "input": "psservice -u admin -p SuperSecret! query spooler",
+    "expected": "psservice -u admin -p ************ query spooler"
+  },
+  {
+    "id": "WIN-PSSERVICE-SEPARATED",
+    "input": "psservice64 \\\\server64 -u admin -p SuperSecret! restart spooler",
+    "expected": "psservice64 \\\\server64 -u admin -p ************ restart spooler"
+  },
+  {
+    "id": "WIN-PSSERVICE-P-ONLY",
+    "input": "psservice -p SuperSecret! query spooler",
+    "expected": "psservice -p ************ query spooler"
+  },
+  {
+    "id": "WIN-PSSERVICE-P-ONLY-HOST",
+    "input": "psservice64.exe \\\\dc01 -p SuperSecret! restart spooler",
+    "expected": "psservice64.exe \\\\dc01 -p ************ restart spooler"
+  },
+  {
+    "id": "WIN-SYSINTERNALS-PSLIST",
+    "input": "pslist64 \\\\dc01 -u admin -p SuperSecret",
+    "expected": "pslist64 \\\\dc01 -u admin -p ***********"
+  },
+  {
+    "id": "WIN-SYSINTERNALS-PSSHUTDOWN",
+    "input": "psshutdown.exe \\\\server -u admin -p SuperSecret -r",
+    "expected": "psshutdown.exe \\\\server -u admin -p *********** -r"
+  },
+  {
+    "id": "WIN-SYSINTERNALS-PSSUSPEND",
+    "input": "pssuspend64 \\\\workstation -u admin -p SuperSecret notepad.exe",
+    "expected": "pssuspend64 \\\\workstation -u admin -p *********** notepad.exe"
+  },
+  {
+    "id": "WIN-SYSINTERNALS-PSGETSID",
+    "input": "psgetsid.exe \\\\server -u admin -p SuperSecret",
+    "expected": "psgetsid.exe \\\\server -u admin -p ***********"
   }
 ]

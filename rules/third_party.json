@@ -38,6 +38,54 @@
     "min_length": 3
   },
   {
+    "id": "3P-CURL-PROXY-U",
+    "comment": "Matches curl proxy credentials with -U flag.",
+    "phrase": [
+      "<any:^curl(\\.exe)?$>",
+      "-U",
+      "<redact:.*:.*>"
+    ],
+    "priority": 0,
+    "enabled": true,
+    "min_length": 3
+  },
+  {
+    "id": "3P-CURL-PROXY-USER",
+    "comment": "Matches curl proxy credentials with --proxy-user flag.",
+    "phrase": [
+      "<any:^curl(\\.exe)?$>",
+      "--proxy-user",
+      "<redact:.*:.*>"
+    ],
+    "priority": 0,
+    "enabled": true,
+    "min_length": 3
+  },
+  {
+    "id": "3P-CURL-PASS",
+    "comment": "Matches curl private key passphrase: curl --pass MyPassphrase",
+    "phrase": [
+      "<any:^curl(\\.exe)?$>",
+      "--pass",
+      "<REDACT>"
+    ],
+    "priority": 0,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "3P-CURL-TLSPASSWORD",
+    "comment": "Matches curl TLS password: curl --tlspassword MyTLSPass",
+    "phrase": [
+      "<any:^curl(\\.exe)?$>",
+      "--tlspassword",
+      "<REDACT>"
+    ],
+    "priority": 0,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
     "id": "3P-GIT-AUTH",
     "comment": "Matches git clone URLs with embedded credentials. Regex is required here to redact a substring within a single token.",
     "phrase": [
@@ -141,5 +189,41 @@
     "priority": 1,
     "enabled": true,
     "min_length": 32
+  },
+  {
+    "id": "3P-ZIP-PASSWORD",
+    "comment": "Matches zip/unzip -P password and --password password flags (space-separated plaintext password).",
+    "phrase": [
+      "(?i)\\b(?:un)?zip(?:\\.exe)?\\b.*?(?:-P|--password)\\s+([^\\s'\"]+)"
+    ],
+    "isRegex": true,
+    "required_byte": "-",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 2
+  },
+  {
+    "id": "3P-RAR-PASSWORD",
+    "comment": "Matches rar/unrar -pPASSWORD and -hpPASSWORD flags (password attached directly to flag, no space).",
+    "phrase": [
+      "(?i)\\b(?:un)?rar(?:\\.exe)?\\b.*?-h?p([^\\s'\"\\-][^\\s'\"]*)"
+    ],
+    "isRegex": true,
+    "required_byte": "-",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 2
+  },
+  {
+    "id": "3P-NUGET-PASSWORD",
+    "comment": "Matches nuget sources add/update -password <password>. Single-dash, space-separated flag not caught by PHASE0-GENERIC-FLAG-PASSWORD.",
+    "phrase": [
+      "(?i)\\bnuget(?:\\.exe)?\\b.*?\\s-password\\s+([^-\\s]\\S*)"
+    ],
+    "isRegex": true,
+    "required_byte": "-",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 2
   }
 ]

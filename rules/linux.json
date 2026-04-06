@@ -41,82 +41,38 @@
     "min_length": 4
   },
   {
-    "id": "LNX-MYSQL-P-SEPARATED",
+    "id": "LNX-MYSQL-FAMILY-P-SEPARATED",
+    "comment": "Matches all mysql/mariadb family tools (mysql, mysqladmin, mysqldump, mysqlimport, mysqlshow, mysqlslap and their mariadb-* equivalents) using space-separated -u user -p password form.",
     "phrase": [
-      "mysql",
-      "-u",
-      "<any>",
-      "-p",
-      "<redact:^[^-].*>"
+      "(?i)\\b(?:mysql(?:admin|dump|import|show|slap)?|mariadb(?:-(?:admin|dump|import|show|slap))?)(?:\\.exe)?\\b.*?\\s-u\\s+\\S+\\s+-p\\s+([^-\\s]\\S*)"
     ],
-    "priority": 0,
+    "isRegex": true,
+    "required_byte": "-",
+    "priority": 1,
     "enabled": true,
     "min_length": 4
   },
   {
-    "id": "LNX-MYSQL-PASSWORD",
+    "id": "LNX-MYSQL-FAMILY-PASSWORD",
+    "comment": "Matches all mysql/mariadb family tools using --password password form.",
     "phrase": [
-      "mysql",
-      "-u",
-      "<any>",
-      "--password",
-      "<REDACT>"
+      "(?i)\\b(?:mysql(?:admin|dump|import|show|slap)?|mariadb(?:-(?:admin|dump|import|show|slap))?)(?:\\.exe)?\\b.*?\\s-u\\s+\\S+\\s+--password\\s+(\\S+)"
     ],
-    "priority": 0,
+    "isRegex": true,
+    "required_byte": "-",
+    "priority": 1,
     "enabled": true,
     "min_length": 4
   },
   {
-    "id": "LNX-MYSQL-P-ATTACHED",
-    "comment": "Handles mysql -u root -pPassword123 where -p and password are a single token with no space.",
+    "id": "LNX-MYSQL-FAMILY-P-ATTACHED",
+    "comment": "Matches all mysql/mariadb family tools using attached -pPassword123 form (no space between -p and password).",
     "phrase": [
-      "mysql",
-      "-u",
-      "<any>",
-      "<redact:^-p.+>"
+      "(?i)\\b(?:mysql(?:admin|dump|import|show|slap)?|mariadb(?:-(?:admin|dump|import|show|slap))?)(?:\\.exe)?\\b.*?\\s-u\\s+\\S+\\s+-p([^-\\s]\\S*)"
     ],
-    "redact_after": "-p",
-    "priority": 0,
-    "enabled": true,
-    "min_length": 5
-  },
-  {
-    "id": "LNX-MYSQLDUMP-P",
-    "phrase": [
-      "mysqldump",
-      "-u",
-      "<any>",
-      "-p",
-      "<redact:^[^-].*>"
-    ],
-    "priority": 0,
-    "enabled": true,
-    "min_length": 4
-  },
-  {
-    "id": "LNX-MYSQLDUMP-PASSWORD",
-    "phrase": [
-      "mysqldump",
-      "-u",
-      "<any>",
-      "--password",
-      "<REDACT>"
-    ],
-    "priority": 0,
-    "enabled": true,
-    "min_length": 4
-  },
-  {
-    "id": "LNX-MYSQLDUMP-P-ATTACHED",
-    "comment": "Handles mysqldump -u root -pPassword123 attached form.",
-    "phrase": [
-      "mysqldump",
-      "-u",
-      "<any>",
-      "<redact:^-p.+>"
-    ],
-    "redact_after": "-p",
-    "priority": 0,
+    "isRegex": true,
+    "required_byte": "-",
+    "priority": 1,
     "enabled": true,
     "min_length": 5
   },
@@ -257,6 +213,48 @@
       "--vault-password-file",
       "<REDACT>"
     ],
+    "priority": 0,
+    "enabled": true,
+    "min_length": 5
+  },
+  {
+    "id": "LNX-MYSQLSHOW-P-SEPARATED",
+    "comment": "Matches mysqlshow/mariadb-show -u user -p password (space-separated).",
+    "phrase": [
+      "<any:^(?:mysqlshow|mariadb-show)$>",
+      "-u",
+      "<any>",
+      "-p",
+      "<redact:^[^-].*>"
+    ],
+    "priority": 0,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "LNX-MYSQLSHOW-PASSWORD",
+    "comment": "Matches mysqlshow/mariadb-show -u user --password password.",
+    "phrase": [
+      "<any:^(?:mysqlshow|mariadb-show)$>",
+      "-u",
+      "<any>",
+      "--password",
+      "<REDACT>"
+    ],
+    "priority": 0,
+    "enabled": true,
+    "min_length": 4
+  },
+  {
+    "id": "LNX-MYSQLSHOW-P-ATTACHED",
+    "comment": "Matches mysqlshow/mariadb-show -u user -pPassword123 (password attached directly to -p flag).",
+    "phrase": [
+      "<any:^(?:mysqlshow|mariadb-show)$>",
+      "-u",
+      "<any>",
+      "<redact:^-p.+>"
+    ],
+    "redact_after": "-p",
     "priority": 0,
     "enabled": true,
     "min_length": 5

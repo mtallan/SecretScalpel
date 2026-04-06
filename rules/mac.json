@@ -10,5 +10,29 @@
     "enabled": true,
     "comment": "Matches macOS 'security' keychain subcommands in both hyphenated (add-internet-password) and space-separated (add internet password) forms. Anchored to known subcommands to prevent false positives.",
     "min_length": 4
+  },
+  {
+    "id": "MAC-DSCL-P",
+    "comment": "Matches dscl -P authentication password flag.",
+    "phrase": [
+      "(?i)\\bdscl\\b.*?\\s-P\\s+([^\\s'\"]+)"
+    ],
+    "isRegex": true,
+    "required_byte": "-",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 2
+  },
+  {
+    "id": "MAC-DSCL-PASSWD",
+    "comment": "Matches dscl -passwd user_path [old_pass] new_pass. Captures new_pass (last arg); old_pass is not separately redacted due to overlap constraints.",
+    "phrase": [
+      "(?i)\\bdscl\\b.*?-passwd\\s+\\S+\\s+(?:\\S+\\s+)?([^\\s'\"]+)"
+    ],
+    "isRegex": true,
+    "required_byte": "-",
+    "priority": 1,
+    "enabled": true,
+    "min_length": 2
   }
 ]
