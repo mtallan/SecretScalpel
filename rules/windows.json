@@ -70,7 +70,7 @@
     "enabled": true,
     "min_length": 3
   },
-{
+  {
     "id": "PS-ENV-VAR-ASSIGNMENT",
     "comment": "Matches PowerShell environment variable assignments like $env:PASSWORD = secret. Token sequence: <$env:VAR> <=> <value>.",
     "phrase": [
@@ -232,9 +232,9 @@
   },
   {
     "id": "WIN-SYSINTERNALS-NOHOST",
-    "comment": "Generic Sysinternals ps* tool: credential via -u/-p flags, no remote host. Covers psexec, psservice, pspasswd, pslist, psshutdown, pssuspend, psgetsid, etc.",
+    "comment": "Sysinternals ps* tools with -u/-p credential flags, no remote host. Explicit allowlist excludes pscp and psping which use different flag conventions.",
     "phrase": [
-      "<any:(?i)^ps[a-z]+(64)?(\\.exe)?$>",
+      "<any:(?i)^(?:psexec|psfile|psgetsid|psinfo|pskill|pslist|psloggedon|psloglist|pspasswd|psservice|psshutdown|pssuspend)(64)?(\\.exe)?$>",
       "-u",
       "<any>",
       "-p",
@@ -248,7 +248,7 @@
     "id": "WIN-SYSINTERNALS-SEPARATED",
     "comment": "Generic Sysinternals ps* tool: credential via -u/-p flags with remote host.",
     "phrase": [
-      "<any:(?i)^ps[a-z]+(64)?(\\.exe)?$>",
+      "<any:(?i)^(?:psexec|psfile|psgetsid|psinfo|pskill|pslist|psloggedon|psloglist|pspasswd|psservice|psshutdown|pssuspend)(64)?(\\.exe)?$>",
       "<any>",
       "-u",
       "<any>",
@@ -263,7 +263,7 @@
     "id": "WIN-SYSINTERNALS-P-ONLY",
     "comment": "Generic Sysinternals ps* tool: -p flag only, no -u, no remote host.",
     "phrase": [
-      "<any:(?i)^ps[a-z]+(64)?(\\.exe)?$>",
+      "<any:(?i)^(?:psexec|psfile|psgetsid|psinfo|pskill|pslist|psloggedon|psloglist|pspasswd|psservice|psshutdown|pssuspend)(64)?(\\.exe)?$>",
       "-p",
       "<REDACT>"
     ],
@@ -275,7 +275,7 @@
     "id": "WIN-SYSINTERNALS-P-ONLY-HOST",
     "comment": "Generic Sysinternals ps* tool: -p flag only with remote host.",
     "phrase": [
-      "<any:(?i)^ps[a-z]+(64)?(\\.exe)?$>",
+      "<any:(?i)^(?:psexec|psfile|psgetsid|psinfo|pskill|pslist|psloggedon|psloglist|pspasswd|psservice|psshutdown|pssuspend)(64)?(\\.exe)?$>",
       "<any>",
       "-p",
       "<REDACT>"

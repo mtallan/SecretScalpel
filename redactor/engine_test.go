@@ -22,9 +22,11 @@ func TestMain(m *testing.M) {
 	err := LoadRulesFromDir("../rules", testRoot)
 	if err != nil {
 		// Fallback: try loading from ./rules (handles running from project root)
-		if err := LoadRulesFromDir("rules", testRoot); err != nil {
-			slog.Warn("Failed to load rules for tests (proceeding with empty trie)", "error", err)
-		}
+		err = LoadRulesFromDir("rules", testRoot)
+	}
+	if err != nil {
+		slog.Error("Failed to load rules for tests", "error", err)
+		os.Exit(1)
 	}
 	os.Exit(m.Run())
 }
@@ -148,8 +150,9 @@ custom-cli.exe /p:MyP@ssword! /silent
 	b.SetBytes(int64(len(rawBytes))) // Allows Go to calculate MB/s
 	b.ResetTimer()
 
+	var buf bytes.Buffer
 	for i := 0; i < b.N; i++ {
-		var buf bytes.Buffer
+		buf.Reset()
 		RedactBytesToWriter(&buf, rawBytes, testRoot)
 		_ = buf.Bytes()
 	}

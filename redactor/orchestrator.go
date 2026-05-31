@@ -19,6 +19,7 @@ type Job struct {
 type Result struct {
 	Index int
 	Data  *bytes.Buffer
+	Err   error // non-nil when the worker failed to process this chunk
 }
 
 const (
@@ -36,6 +37,57 @@ const (
 // bufferPool holds reusable buffers for the orchestrator to read chunks into.
 var bufferPool = sync.Pool{
 	New: func() any { return bytes.NewBuffer(make([]byte, 0, chunkSize+4096)) },
+}
+
+// processJob redacts all lines in job and returns a pooled result buffer.
+// It recovers from panics so a bad chunk never kills the worker goroutine.
+func processJob(job Job, trie *Trie) (buf *bytes.Buffer, err error) {
+	buf = jsonBufPool.Get().(*bytes.Buffer)
+	buf.Reset()
+
+	jobDataReturned := false
+	defer func() {
+		if r := recover(); r != nil {
+			slog.Error("Worker panic recovered", "panic", r, "stack", string(debug.Stack()))
+			if buf != nil {
+				buf.Reset()
+				jsonBufPool.Put(buf)
+				buf = nil
+			}
+			if !jobDataReturned && job.Data != nil {
+				job.Data.Reset()
+				bufferPool.Put(job.Data)
+			}
+			err = fmt.Errorf("worker panic: %v", r)
+		}
+	}()
+
+	remaining := job.Data.Bytes()
+	var lineCount int64
+	for len(remaining) > 0 {
+		nl := bytes.IndexByte(remaining, '\n')
+		var line []byte
+		if nl >= 0 {
+			line = remaining[:nl+1]
+			remaining = remaining[nl+1:]
+		} else {
+			line = remaining
+			remaining = nil
+		}
+		lineCount++
+		trimmed := bytes.TrimLeft(line, " \t\r\n")
+		if len(trimmed) > 0 && trimmed[0] == '{' {
+			redactAllJSONStrings(buf, line, trie)
+		} else {
+			RedactBytesToWriter(buf, line, trie)
+		}
+	}
+	trie.linesIn.Add(lineCount)
+
+	jobDataReturned = true
+	job.Data.Reset()
+	bufferPool.Put(job.Data)
+	return buf, nil
 }
 
 // ProcessStream batches log lines into chunks to eliminate channel contention
@@ -59,48 +111,14 @@ func ProcessStream(r io.Reader, w io.Writer, trie *Trie, workers int) error {
 	for i := 0; i < workers; i++ {
 		wg.Add(1)
 		go func() {
-			defer func() {
-				// Ensure wg.Done() is always called, even if a panic occurs.
-				// This prevents the entire application from hanging.
-				if r := recover(); r != nil {
-		slog.Error("Worker panic recovered", "panic", r, "stack", string(debug.Stack()))
-				}
-				wg.Done()
-			}()
+			defer wg.Done()
 			for job := range jobs {
-				resultBuf := jsonBufPool.Get().(*bytes.Buffer)
-				resultBuf.Reset()
-
-				// Process line by line so JSON and raw lines in the same stream are
-				// each routed to the correct redactor.
-				remaining := job.Data.Bytes()
-				var lineCount int64
-				for len(remaining) > 0 {
-					nl := bytes.IndexByte(remaining, '\n')
-					var line []byte
-					if nl >= 0 {
-						line = remaining[:nl+1]
-						remaining = remaining[nl+1:]
-					} else {
-						line = remaining
-						remaining = nil
-					}
-					lineCount++
-					trimmed := bytes.TrimLeft(line, " \t\r\n")
-					if len(trimmed) > 0 && trimmed[0] == '{' {
-						lineBuf := RedactAllJSONStringsToBuffer(line, trie)
-						resultBuf.Write(lineBuf.Bytes())
-						lineBuf.Reset()
-						jsonBufPool.Put(lineBuf)
-					} else {
-						RedactBytesToWriter(resultBuf, line, trie)
-					}
+				buf, err := processJob(job, trie)
+				if err != nil {
+					results <- Result{Index: job.Index, Err: err}
+				} else {
+					results <- Result{Index: job.Index, Data: buf}
 				}
-				trie.linesIn.Add(lineCount)
-
-				job.Data.Reset()
-				bufferPool.Put(job.Data)
-				results <- Result{Index: job.Index, Data: resultBuf}
 			}
 		}()
 	}
@@ -117,6 +135,13 @@ func ProcessStream(r io.Reader, w io.Writer, trie *Trie, workers int) error {
 		defer func() {
 			if r := recover(); r != nil {
 				slog.Error("Writer panic recovered", "panic", r, "stack", string(debug.Stack()))
+				// Drain results so workers aren't left blocked on a send.
+				for res := range results {
+					if res.Data != nil {
+						res.Data.Reset()
+						jsonBufPool.Put(res.Data)
+					}
+				}
 				errChan <- fmt.Errorf("writer panic: %v", r)
 			}
 		}()
@@ -124,10 +149,33 @@ func ProcessStream(r io.Reader, w io.Writer, trie *Trie, workers int) error {
 		expectedIndex := 0
 		buffer := make(map[int]*bytes.Buffer)
 
+		// drainAndExit recycles all pending buffers, drains the results channel
+		// to unblock any workers still sending, then reports err to errChan.
+		// The for-range blocks until results is closed (all workers done).
+		drainAndExit := func(err error) {
+			for _, v := range buffer {
+				v.Reset()
+				jsonBufPool.Put(v)
+			}
+			for res := range results {
+				if res.Data != nil {
+					res.Data.Reset()
+					jsonBufPool.Put(res.Data)
+				}
+			}
+			errChan <- err
+		}
+
 		for res := range results {
+			if res.Err != nil {
+				drainAndExit(res.Err)
+				return
+			}
 			if res.Index == expectedIndex {
 				if _, err := w.Write(res.Data.Bytes()); err != nil {
-		errChan <- err
+					res.Data.Reset()
+					jsonBufPool.Put(res.Data)
+					drainAndExit(err)
 					return
 				}
 				res.Data.Reset()
@@ -137,7 +185,10 @@ func ProcessStream(r io.Reader, w io.Writer, trie *Trie, workers int) error {
 				for {
 					if nextData, ok := buffer[expectedIndex]; ok {
 						if _, err := w.Write(nextData.Bytes()); err != nil {
-							errChan <- err
+							nextData.Reset()
+							jsonBufPool.Put(nextData)
+							delete(buffer, expectedIndex)
+							drainAndExit(err)
 							return
 						}
 						nextData.Reset()

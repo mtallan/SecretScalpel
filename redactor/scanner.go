@@ -80,16 +80,10 @@ func isSensitiveKey(key []byte, keyTrie *JSONKeyTrieNode) bool {
 	return curr.IsEnd
 }
 
-// RedactAllJSONStringsToBuffer performs JSON-aware redaction and returns the
-// *bytes.Buffer from the pool containing the result. The caller is responsible
-// for returning the buffer to the jsonBufPool.
-func RedactAllJSONStringsToBuffer(raw []byte, trie *Trie) *bytes.Buffer {
-	result := jsonBufPool.Get().(*bytes.Buffer)
-	result.Reset()
-	if result.Cap() < len(raw) {
-		result.Grow(len(raw))
-	}
-
+// redactAllJSONStrings is the core JSON redaction logic. It writes the
+// redacted output directly into dst, which must be a non-nil bytes.Buffer.
+// Callers that need a pooled buffer should use RedactAllJSONStringsToBuffer.
+func redactAllJSONStrings(dst *bytes.Buffer, raw []byte, trie *Trie) {
 	inString := false
 	escaped := false
 	stringStart := 0
@@ -133,7 +127,7 @@ func RedactAllJSONStringsToBuffer(raw []byte, trie *Trie) *bytes.Buffer {
 		if c == '"' {
 			if !inString {
 				inString = true
-				result.Write(raw[cursor : i+1])
+				dst.Write(raw[cursor : i+1])
 				stringStart = i + 1
 			} else {
 				inString = false
@@ -142,32 +136,43 @@ func RedactAllJSONStringsToBuffer(raw []byte, trie *Trie) *bytes.Buffer {
 				if !afterColon {
 					// this is a key
 					isLastKeySensitive = isSensitiveKey(strContent, trie.JSONSensitiveKeys)
-					result.Write(strContent)
+					dst.Write(strContent)
 				} else {
 					// this is a value
 					if len(strContent) > 0 {
 						if isLastKeySensitive {
 							// always redact sensitive key values, regardless of content
 							for range strContent {
-								result.WriteByte('*')
+								dst.WriteByte('*')
 							}
 						} else {
-							RedactBytesToWriter(result, strContent, trie)
+							RedactBytesToWriter(dst, strContent, trie)
 						}
 					}
 					isLastKeySensitive = false
 				}
 
-				result.WriteByte('"')
+				dst.WriteByte('"')
 				cursor = i + 1
 			}
 		}
 	}
 
 	if cursor < len(raw) {
-		result.Write(raw[cursor:])
+		dst.Write(raw[cursor:])
 	}
+}
 
+// RedactAllJSONStringsToBuffer performs JSON-aware redaction and returns the
+// *bytes.Buffer from the pool containing the result. The caller is responsible
+// for returning the buffer to the jsonBufPool.
+func RedactAllJSONStringsToBuffer(raw []byte, trie *Trie) *bytes.Buffer {
+	result := jsonBufPool.Get().(*bytes.Buffer)
+	result.Reset()
+	if result.Cap() < len(raw) {
+		result.Grow(len(raw))
+	}
+	redactAllJSONStrings(result, raw, trie)
 	return result
 }
 

@@ -2,9 +2,9 @@
 
 ## Pre-Release Verification
 - [ ] **Tests:** Run `make test` and ensure all pass.
-- [ ] **Benchmarks:** Run `make bench` and verify throughput is >900MB/s for realistic data.
+- [ ] **Benchmarks:** Run `make bench` and verify no panics or regressions.
 - [ ] **Version:** Verify `const Version = "v0.1.0"` in `main.go`.
-- [ ] **Documentation:** Ensure `README.md` benchmark numbers match current performance.
+- [ ] **Health check:** Run `go run . -health` and verify rule count matches `README.md`.
 
 ## Build Artifacts
 - [ ] **Linux (amd64):**

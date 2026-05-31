@@ -2,6 +2,7 @@ package redactor
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"strings"
 	"testing"
@@ -51,8 +52,8 @@ func TestRedactBytes_NegativeCases(t *testing.T) {
 			RedactBytesToWriter(&buf, []byte(tc.input), testRoot)
 			got := buf.Bytes()
 			// Output must be non-nil even for empty input
-			if got == nil && tc.input != "" {
-				t.Error("RedactBytesToWriter produced nil for non-empty input")
+			if len(got) == 0 && len(tc.input) > 0 {
+				t.Error("RedactBytesToWriter produced empty output for non-empty input")
 			}
 		})
 	}
@@ -153,9 +154,10 @@ func TestProcessStream_OutputOrdering(t *testing.T) {
 	var input bytes.Buffer
 	var expected strings.Builder
 
-	// Write enough lines to span multiple chunks and exercise the order-preserving writer
+	// Write enough unique lines to span multiple chunks and exercise the order-preserving writer.
+	// Lines must be unique so a mis-ordering would produce a different string.
 	for i := 0; i < 10000; i++ {
-		line := "line with no secrets number one\n"
+		line := fmt.Sprintf("line-%05d-no-secrets\n", i)
 		input.WriteString(line)
 		expected.WriteString(line)
 	}
@@ -175,7 +177,7 @@ func TestProcessStream_OutputOrdering(t *testing.T) {
 func TestProcessStream_ConcurrentSafety(t *testing.T) {
 	input := bytes.Repeat([]byte("psexec -u admin -p Secret123 cmd.exe\n"), 1000)
 
-	for i := 0; i < 5; i++ {
+	for range 5 {
 		t.Run("run", func(t *testing.T) {
 			t.Parallel()
 			if err := ProcessStream(bytes.NewReader(input), io.Discard, testRoot, 2); err != nil {
@@ -240,4 +242,3 @@ func FuzzRedactAllJSONStrings(f *testing.F) {
 		_ = got
 	})
 }
-
