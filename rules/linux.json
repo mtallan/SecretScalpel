@@ -218,48 +218,6 @@
     "min_length": 5
   },
   {
-    "id": "LNX-MYSQLSHOW-P-SEPARATED",
-    "comment": "Matches mysqlshow/mariadb-show -u user -p password (space-separated).",
-    "phrase": [
-      "<any:^(?:mysqlshow|mariadb-show)$>",
-      "-u",
-      "<any>",
-      "-p",
-      "<redact:^[^-].*>"
-    ],
-    "priority": 0,
-    "enabled": true,
-    "min_length": 4
-  },
-  {
-    "id": "LNX-MYSQLSHOW-PASSWORD",
-    "comment": "Matches mysqlshow/mariadb-show -u user --password password.",
-    "phrase": [
-      "<any:^(?:mysqlshow|mariadb-show)$>",
-      "-u",
-      "<any>",
-      "--password",
-      "<REDACT>"
-    ],
-    "priority": 0,
-    "enabled": true,
-    "min_length": 4
-  },
-  {
-    "id": "LNX-MYSQLSHOW-P-ATTACHED",
-    "comment": "Matches mysqlshow/mariadb-show -u user -pPassword123 (password attached directly to -p flag).",
-    "phrase": [
-      "<any:^(?:mysqlshow|mariadb-show)$>",
-      "-u",
-      "<any>",
-      "<redact:^-p.+>"
-    ],
-    "redact_after": "-p",
-    "priority": 0,
-    "enabled": true,
-    "min_length": 5
-  },
-  {
     "id": "LNX-GPUPDATE-P",
     "phrase": [
       "gpupdate",

@@ -102,8 +102,8 @@ Rules live in `rules/*.json` and are loaded at startup. No recompilation require
 **Trie rules** — token sequence matching:
 ```json
 {
-  "id": "WIN-PSEXEC-SEPARATED",
-  "phrase": ["psexec", "-u", "<any>", "-p", "<REDACT>"],
+  "id": "WIN-SYSINTERNALS-NOHOST",
+  "phrase": ["<any:(?i)^psexec$>", "-u", "<any>", "-p", "<REDACT>"],
   "priority": 0,
   "enabled": true,
   "min_length": 4
@@ -145,12 +145,13 @@ Other rule fields: `mask` (per-rule mask override), `redact_after` (redact only 
 
 ## Included Rules
 
-121 rules across Windows, Linux, macOS, cloud CLIs, and third-party tools:
+122 rules across Windows, Linux, macOS, cloud CLIs, and third-party tools:
 
-- **Windows:** `psexec`, `net use`, `cmdkey`, `runas`, `schtasks`, `sqlcmd`, `wmic`, `mstsc`, `rasdial`, PowerShell credential patterns, Mimikatz output
-- **Linux:** `mysql`, `psql`, `curl`, `openssl`, `ssh-keygen`, `docker login`, `ansible-vault`
+- **Windows:** Sysinternals suite (`psexec`, `psservice`, `pspasswd`, `pslist`, `psshutdown`, `pssuspend`, `psgetsid`), `net use`, `cmdkey`, `runas`, `schtasks`, `sqlcmd`, `wmic`, `mstsc`, `rasdial`, PowerShell credential patterns, Mimikatz output
+- **Linux:** MySQL/MariaDB family (`mysql`, `mysqladmin`, `mysqldump`, `mysqlslap`, `mariadb` and equivalents), `psql`, `openssl`, `ssh-keygen`, `docker login`, `ansible-vault`, `gpupdate`
+- **macOS:** `security` keychain subcommands, `dscl` password flags
 - **Cloud:** AWS CLI, `gcloud`, `az` keyvault, Kubernetes/Helm
-- **Third-party:** Impacket, SQLPlus, SVN, `git clone` with embedded credentials
+- **Third-party:** `curl` (basic auth, proxy credentials, key passphrase), `zip`/`unzip`, `rar`/`unrar`, NuGet, Impacket, SQLPlus, SVN, `git clone` with embedded credentials
 - **Generic:** JWT tokens, PEM private keys, AWS access key IDs, bearer tokens, URL basic auth, database connection strings
 
 ## Stats & Compliance Reporting
@@ -166,7 +167,7 @@ The `-stats` flag writes a JSON summary to stderr when the process exits:
   "lines_processed": 4821,
   "total_matches": 12,
   "rule_hits": {
-    "WIN-PSEXEC-NOHOST": 8,
+    "WIN-SYSINTERNALS-NOHOST": 8,
     "NET-USE-DRIVE-PASS": 4
   }
 }
@@ -180,7 +181,7 @@ cat app.log | secretscalpel -stats 2>report.json | gzip > redacted.log.gz
 
 **Important:** stats are per-invocation, not cumulative. Each time the binary runs it starts from zero. If your shipper calls SecretScalpel once per batch, you get one JSON blob per batch. Aggregating those into daily totals — summing `rule_hits` across invocations — is the job of whatever is collecting your stderr output (CloudWatch Logs, Splunk, Elastic, etc.). The query depends on your stack, but the data is there if stderr is being captured.
 
-The per-rule counts are the most actionable signal. A spike in `WIN-PSEXEC-NOHOST` means credentials are appearing in logs from psexec activity — that's worth knowing independently of the redaction itself.
+The per-rule counts are the most actionable signal. A spike in `WIN-SYSINTERNALS-NOHOST` means credentials are appearing in logs from psexec activity — that's worth knowing independently of the redaction itself.
 
 ## As a Library
 
