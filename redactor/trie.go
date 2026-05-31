@@ -38,9 +38,12 @@ type RuleMeta struct {
 }
 
 type TrieNode struct {
-	Children      map[string]*TrieNode
-	RegexChildren []RegexEdge
-	Meta          *RuleMeta
+	Children         map[string]*TrieNode
+	RegexChildren    []RegexEdge
+	Meta             *RuleMeta
+	WildcardChild    *TrieNode  // shortcut to Children["*"], nil if absent
+	FirstByteSet     [256]bool  // first lowercased byte of each literal (non-wildcard) child key
+	HasRegexChildren bool       // len(RegexChildren) > 0
 }
 
 type JSONKeyTrieNode struct {
@@ -145,6 +148,7 @@ func (t *Trie) AddRule(id string, phrase []string, mask string, min, max int, re
 			if !found {
 				newNode := &TrieNode{Children: make(map[string]*TrieNode)}
 				curr.RegexChildren = append(curr.RegexChildren, RegexEdge{Re: re, Node: newNode})
+				curr.HasRegexChildren = true
 				curr = newNode
 			}
 			continue
@@ -162,6 +166,11 @@ func (t *Trie) AddRule(id string, phrase []string, mask string, min, max int, re
 
 		if _, ok := curr.Children[key]; !ok {
 			curr.Children[key] = &TrieNode{Children: make(map[string]*TrieNode)}
+		}
+		if key == "*" {
+			curr.WildcardChild = curr.Children["*"]
+		} else if len(key) > 0 {
+			curr.FirstByteSet[key[0]] = true
 		}
 		curr = curr.Children[key]
 	}
